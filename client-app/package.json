@@ -10,6 +10,8 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@babel/plugin-transform-class-properties": "^7.25.9",
+    "@babel/plugin-transform-private-property-in-object": "^7.25.9",
     "@gorhom/bottom-sheet": "^5.0.5",
     "@react-native-masked-view/masked-view": "^0.3.2",
     "@react-navigation/drawer": "^7.0.4",
