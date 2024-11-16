@@ -7,7 +7,9 @@ import {
   Animated,
   Dimensions,
   TouchableWithoutFeedback,
+  Image,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 
 const { width } = Dimensions.get('window');
@@ -21,17 +23,15 @@ type RootStackParamList = {
 interface MenuProps {
   isVisible: boolean;
   onClose: () => void;
-  navigation?: StackNavigationProp<RootStackParamList>;
   currentScreen: keyof RootStackParamList; // Tela atual
 }
 
-const Menu: React.FC<MenuProps> = ({
-  isVisible,
-  onClose,
-  navigation,
-  currentScreen,
-}) => {
+const Menu: React.FC<MenuProps> = ({ isVisible, onClose, currentScreen }) => {
   const [menuAnimation] = useState(new Animated.Value(width));
+
+  type NavigationProp = StackNavigationProp<RootStackParamList>;
+
+  const navigation = useNavigation<NavigationProp>();
 
   useEffect(() => {
     if (isVisible) {
@@ -50,12 +50,8 @@ const Menu: React.FC<MenuProps> = ({
   }, [isVisible]);
 
   const navigateTo = (screen: keyof RootStackParamList) => {
-    if (navigation) {
-      navigation.navigate(screen);
-      onClose();
-    } else {
-      console.error('Navigation não está disponível');
-    }
+    navigation.navigate(screen);
+    onClose();
   };
 
   const options = [
@@ -73,6 +69,10 @@ const Menu: React.FC<MenuProps> = ({
       <View style={styles.overlay}>
         <Animated.View style={[styles.menuContainer, { left: menuAnimation }]}>
           <View style={styles.fullTopSection}>
+            <Image
+              source={require('../assets/teddy-logo.png')} // Caminho para a logo
+              style={styles.logo} // Estilo para a logo
+            />
             <View style={styles.optionsContainer}>
               {options.map((option) => (
                 <TouchableOpacity
@@ -122,6 +122,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#a3a3a3',
     justifyContent: 'flex-end',
     borderTopLeftRadius: 30,
+  },
+  logo: {
+    width: 100,
+    height: 50,
+    alignSelf: 'center',
+    marginBottom: 30,
   },
   optionsContainer: {
     height: '80%',

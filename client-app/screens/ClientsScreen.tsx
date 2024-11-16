@@ -7,10 +7,9 @@ import {
   StyleSheet,
   Image,
   Alert,
-  Modal,
   TextInput,
-  TouchableWithoutFeedback,
 } from 'react-native';
+import Modal from 'react-native-modal';
 
 export const ClientsScreen = () => {
   const [clients, setClients] = useState([
@@ -62,8 +61,12 @@ export const ClientsScreen = () => {
       {
         id: Math.random().toString(),
         name: newClient.name,
-        salary: parseFloat(newClient.salary),
-        companyValue: parseFloat(newClient.companyValue),
+        salary: parseFloat(
+          newClient.salary.replace(/\./g, '').replace(',', '.'),
+        ),
+        companyValue: parseFloat(
+          newClient.companyValue.replace(/\./g, '').replace(',', '.'),
+        ),
       },
     ]);
     setNewClient({ name: '', salary: '', companyValue: '' });
@@ -73,6 +76,23 @@ export const ClientsScreen = () => {
 
   const formatCurrency = (value: number) =>
     value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+  const handleCurrencyInput = (value: string) => {
+    const numericValue = value.replace(/[^0-9]/g, '');
+    const formattedValue = (Number(numericValue) / 100).toFixed(2);
+    return formattedValue
+      .replace('.', ',')
+      .replace(/\d(?=(\d{3})+,)/g, '$&.')
+      .replace(/^/, 'R$ ');
+  };
+
+  const handleSalaryChange = (text: string) => {
+    setNewClient({ ...newClient, salary: handleCurrencyInput(text) });
+  };
+
+  const handleCompanyValueChange = (text: string) => {
+    setNewClient({ ...newClient, companyValue: handleCurrencyInput(text) });
+  };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -125,47 +145,49 @@ export const ClientsScreen = () => {
         <Text style={styles.createButtonText}>Criar cliente</Text>
       </TouchableOpacity>
 
-      {/* Modal */}
       <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
+        isVisible={modalVisible}
+        onBackdropPress={() => setModalVisible(false)}
+        onBackButtonPress={() => setModalVisible(false)}
+        animationIn="slideInUp"
+        animationOut="slideOutDown"
+        backdropOpacity={0.75}
+        style={styles.modal}
       >
-        <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
-          <View style={styles.modalOverlay} />
-        </TouchableWithoutFeedback>
         <View style={styles.modalContent}>
+          <View style={styles.dragIndicator} />
           <Text style={styles.modalTitle}>Criar Cliente</Text>
+          <Text style={styles.modalLabel}>Nome</Text>
           <TextInput
             style={styles.input}
             placeholder="Digite o nome:"
+            placeholderTextColor="#dbdbdb"
             value={newClient.name}
             onChangeText={(text) => setNewClient({ ...newClient, name: text })}
           />
+          <Text style={styles.modalLabel}>Salário</Text>
           <TextInput
             style={styles.input}
-            placeholder="Salário:"
+            placeholder="Digite o salário:"
+            placeholderTextColor="#dbdbdb"
             keyboardType="numeric"
             value={newClient.salary}
-            onChangeText={(text) =>
-              setNewClient({ ...newClient, salary: text })
-            }
+            onChangeText={handleSalaryChange}
           />
+          <Text style={styles.modalLabel}>Valor da empresa</Text>
           <TextInput
             style={styles.input}
-            placeholder="Valor da empresa:"
+            placeholder="Digite o valor da empresa:"
+            placeholderTextColor="#dbdbdb"
             keyboardType="numeric"
             value={newClient.companyValue}
-            onChangeText={(text) =>
-              setNewClient({ ...newClient, companyValue: text })
-            }
+            onChangeText={handleCompanyValueChange}
           />
           <TouchableOpacity
-            style={styles.createButton}
+            style={styles.modalButton}
             onPress={handleCreateClient}
           >
-            <Text style={styles.createButtonText}>Criar cliente</Text>
+            <Text style={styles.modalButtonText}>Criar cliente</Text>
           </TouchableOpacity>
         </View>
       </Modal>
@@ -191,7 +213,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#ffffff',
     gap: 10,
-
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -243,31 +264,66 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#EC6724',
   },
+  modal: {
+    margin: 0,
+    justifyContent: 'flex-end',
+  },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  dragIndicator: {
+    width: 40,
+    height: 5,
+    backgroundColor: '#ccc',
+    borderRadius: 2.5,
+    alignSelf: 'center',
+    marginBottom: 30,
   },
   modalContent: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
-    padding: 20,
-    position: 'absolute',
-    bottom: 0,
+    backgroundColor: '#7A7A7A',
+    borderTopLeftRadius: 25,
+    borderTopRightRadius: 25,
+    paddingTop: 20,
+    padding: 40,
     width: '100%',
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 20,
+    color: '#ffffff',
+  },
+  modalLabel: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 5,
+    color: '#ffffff',
   },
   input: {
     width: '100%',
-    height: 40,
+    height: 48,
     borderColor: '#ccc',
     borderWidth: 1,
-    borderRadius: 5,
-    marginBottom: 10,
+    borderRadius: 10,
     paddingHorizontal: 10,
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 25,
+  },
+  modalButton: {
+    width: '100%',
+    height: 48,
+    backgroundColor: '#EB6625',
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalButtonText: {
+    fontSize: 18,
+    color: '#ffffff',
+    fontWeight: '700',
+    textAlign: 'center',
   },
 });

@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import {
-  createStackNavigator,
-  StackNavigationProp,
-} from '@react-navigation/stack';
+import { createStackNavigator } from '@react-navigation/stack';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { LoginScreen } from './screens/LoginScreen';
 import { ClientsScreen } from './screens/ClientsScreen';
 import { Header } from './components/Header';
@@ -20,18 +18,11 @@ const Stack = createStackNavigator<RootStackParamList>();
 
 export default function App() {
   const [isMenuVisible, setMenuVisible] = useState(false);
-  const [navigation, setNavigation] = useState<
-    StackNavigationProp<RootStackParamList> | undefined
-  >(undefined);
   const [currentScreen, setCurrentScreen] =
     useState<keyof RootStackParamList>('Login');
 
-  const handleNavigationReady = (nav: any) => {
-    setNavigation(nav);
-  };
-
   return (
-    <>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <NavigationContainer
         onStateChange={(state) => {
           if (state) {
@@ -40,17 +31,11 @@ export default function App() {
             setCurrentScreen(currentRoute);
           }
         }}
-        ref={(nav) => {
-          if (nav) {
-            handleNavigationReady(nav);
-          }
-        }}
       >
         <Stack.Navigator
           initialRouteName="Login"
           screenOptions={{
             header: () => <Header onMenuPress={() => setMenuVisible(true)} />,
-            headerShown: true,
           }}
         >
           <Stack.Screen
@@ -61,13 +46,12 @@ export default function App() {
           <Stack.Screen name="Clients" component={ClientsScreen} />
           <Stack.Screen name="NotFound" component={NotFoundScreen} />
         </Stack.Navigator>
+        <Menu
+          isVisible={isMenuVisible}
+          onClose={() => setMenuVisible(false)}
+          currentScreen={currentScreen}
+        />
       </NavigationContainer>
-      <Menu
-        isVisible={isMenuVisible}
-        onClose={() => setMenuVisible(false)}
-        navigation={navigation}
-        currentScreen={currentScreen}
-      />
-    </>
+    </GestureHandlerRootView>
   );
 }
