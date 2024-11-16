@@ -7,8 +7,8 @@ import {
   DeleteDateColumn,
   ManyToOne,
 } from 'typeorm';
-import { User } from './user.entity';
 import { Exclude } from 'class-transformer';
+import { User } from 'src/auth/entities/user.entity';
 
 @Entity('clients')
 export class Client {

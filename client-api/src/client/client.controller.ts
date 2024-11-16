@@ -4,138 +4,118 @@ import {
   Body,
   Get,
   Param,
-  UseInterceptors,
-  ClassSerializerInterceptor,
-  NotFoundException,
-  Res,
+  Query,
   Patch,
   Delete,
+  NotFoundException,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
-  ApiParam,
-  ApiBody,
   ApiBearerAuth,
+  ApiParam,
+  ApiQuery,
 } from '@nestjs/swagger';
-import { UrlShortenerService } from './client.service';
-import { CreateShortenedUrlDto } from './dtos/create-shortened-url.dto';
-import { Response } from 'express';
-import { User } from './entities/user.entity';
-import { UpdateShortenedUrlDto } from './dtos/update-shortened-url.dto';
+import { ClientService } from './client.service';
+import { CreateClientDto } from './dtos/create-client.dto';
+import { UpdateClientDto } from './dtos/update-client.dto';
 import { Client } from './entities/client.entity';
-import { GetUserId } from '../common/decorators/get-user-id.decorator';
 
-@ApiTags('Shortened URL')
-@UseInterceptors(ClassSerializerInterceptor)
-@Controller('shortened-url')
-export class UrlShortenerController {
-  constructor(private readonly urlShortenerService: UrlShortenerService) {}
+@ApiTags('Client')
+@Controller('client')
+export class ClientController {
+  constructor(private readonly clientService: ClientService) {}
 
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Create a shortened URL' })
+  @ApiOperation({ summary: 'Create a client' })
   @ApiResponse({
     status: 201,
-    description: 'The URL has been successfully shortened.',
+    description: 'Client created successfully.',
   })
-  @ApiResponse({ status: 400, description: 'Invalid URL format.' })
   @Post()
-  public async shortenUrl(
-    @Body() createShortenedUrlDto: CreateShortenedUrlDto,
-    @GetUserId({ allowUndefined: true }) userId: number | undefined,
-  ): Promise<{ originalUrl: string; shortenedUrl: string; user?: User }> {
-    return await this.urlShortenerService.createShortenedUrl(
-      createShortenedUrlDto,
-      userId,
-    );
+  public async createClient(
+    @Body() createClientDto: CreateClientDto,
+  ): Promise<Client> {
+    return await this.clientService.createClient(createClientDto);
   }
 
-  @ApiOperation({ summary: 'Redirect to the original URL using a shortcode' })
-  @ApiParam({
-    name: 'shortCode',
-    description: 'The shortcode of the shortened URL',
-    example: 'abc123',
-  })
+  @ApiOperation({ summary: 'Get a client by ID' })
+  @ApiParam({ name: 'id', description: 'The ID of the client', example: '1' })
   @ApiResponse({
     status: 200,
-    description: 'Successfully redirected to the original URL.',
+    description: 'Client retrieved successfully.',
+    type: Client,
   })
-  @ApiResponse({ status: 404, description: 'URL not found.' })
-  @Get('r/:shortCode')
-  public async redirectToOriginal(
-    @Param('shortCode') shortCode: string,
-    @Res() res: Response,
-  ): Promise<void> {
-    const originalUrl =
-      await this.urlShortenerService.getOriginalUrl(shortCode);
-
-    if (!originalUrl) {
-      throw new NotFoundException('URL not found');
+  @ApiResponse({ status: 404, description: 'Client not found.' })
+  @Get(':id')
+  public async getClientById(@Param('id') id: string): Promise<Client> {
+    const client = await this.clientService.getClientById(id);
+    if (!client) {
+      throw new NotFoundException('Client not found');
     }
-    res.redirect(originalUrl);
+    return client;
   }
 
-  @ApiBearerAuth()
-  @ApiOperation({
-    summary: 'Get all shortened URLs for the authenticated user',
+  @ApiOperation({ summary: 'Get all clients with pagination' })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Number of clients per page',
+    example: 10,
   })
   @ApiResponse({
     status: 200,
-    description: 'Successfully retrieved the list of shortened URLs.',
-    type: [Client],
+    description: 'Clients retrieved successfully.',
   })
-  @Get('all')
-  public async getUserShortenedUrls(
-    @GetUserId() userId: number,
-  ): Promise<Client[]> {
-    return await this.urlShortenerService.getUserShortenedUrls(userId);
+  @Get()
+  public async getAllClients(
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+  ): Promise<{ total: number; clients: Client[] }> {
+    return await this.clientService.getAllClients(page, limit);
   }
 
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Update a shortened URL' })
+  @ApiOperation({ summary: 'Update a client' })
   @ApiParam({
-    name: 'shortCode',
-    description: 'The shortcode of the shortened URL to update',
-    example: 'abc123',
+    name: 'id',
+    description: 'The ID of the client to update',
+    example: '1',
   })
-  @ApiBody({ type: UpdateShortenedUrlDto })
   @ApiResponse({
     status: 200,
-    description: 'Successfully updated the shortened URL.',
+    description: 'Client updated successfully.',
   })
-  @ApiResponse({ status: 404, description: 'URL not found.' })
-  @Patch(':shortCode')
-  public async updateShortenedUrl(
-    @Param('shortCode') shortCode: string,
-    @Body() updateShortenedUrlDto: UpdateShortenedUrlDto,
-    @GetUserId() userId: number,
-  ): Promise<{ message: string }> {
-    await this.urlShortenerService.updateShortenedUrl(
-      shortCode,
-      updateShortenedUrlDto,
-      userId,
-    );
-    return { message: 'Shortened URL updated successfully' };
+  @ApiResponse({ status: 404, description: 'Client not found.' })
+  @Patch(':id')
+  public async updateClient(
+    @Param('id') id: string,
+    @Body() updateClientDto: UpdateClientDto,
+  ): Promise<Client> {
+    return await this.clientService.updateClient(id, updateClientDto);
   }
 
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Delete a shortened URL' })
+  @ApiOperation({ summary: 'Delete a client' })
   @ApiParam({
-    name: 'shortCode',
-    description: 'The shortcode of the shortened URL to delete',
-    example: 'abc123',
+    name: 'id',
+    description: 'The ID of the client to delete',
+    example: '1',
   })
   @ApiResponse({
     status: 200,
-    description: 'Successfully deleted the shortened URL.',
+    description: 'Client deleted successfully.',
   })
-  @ApiResponse({ status: 404, description: 'URL not found.' })
-  @Delete(':shortCode')
-  public async deleteShortenedUrl(
-    @Param('shortCode') shortCode: string,
-    @GetUserId() userId: number,
-  ): Promise<void> {
-    return await this.urlShortenerService.deleteShortenedUrl(shortCode, userId);
+  @ApiResponse({ status: 404, description: 'Client not found.' })
+  @Delete(':id')
+  public async deleteClient(@Param('id') id: string): Promise<void> {
+    return await this.clientService.deleteClient(id);
   }
 }

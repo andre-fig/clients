@@ -4,13 +4,13 @@ WORKDIR /app
 
 # Copiar o yarn.lock da raiz do monorepo e o package.json específico do serviço
 COPY yarn.lock ./
-COPY ./services/url-shortener/package.json ./
+COPY ./client-api/package.json ./
 
 # Instalar dependências de desenvolvimento
 RUN yarn install --frozen-lockfile
 
 # Copiar o restante do código do serviço para o contêiner
-COPY ./services/url-shortener ./
+COPY ./client-api ./
 
 # Expor a porta
 EXPOSE 3000

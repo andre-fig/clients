@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ClientModule } from './client/client.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { ClientModule } from './client/client.module';
       logging: true,
     }),
     ClientModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

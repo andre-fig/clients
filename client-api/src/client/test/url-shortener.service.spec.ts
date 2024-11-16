@@ -4,8 +4,8 @@ import { Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ShortenedUrl } from '../entities/client.entity';
 import { User } from '../entities/user.entity';
-import { CreateShortenedUrlDto } from '../dtos/create-shortened-url.dto';
-import { UpdateShortenedUrlDto } from '../dtos/update-shortened-url.dto';
+import { CreateClientDto } from '../dtos/create-client.dto';
+import { UpdateClientlDto } from '../dtos/update-client.dto';
 import { NotFoundException, UnauthorizedException } from '@nestjs/common';
 
 describe('UrlShortenerService', () => {
@@ -37,7 +37,7 @@ describe('UrlShortenerService', () => {
 
   describe('createShortenedUrl', () => {
     it('should create a shortened URL without a user', async () => {
-      const createShortenedUrlDto: CreateShortenedUrlDto = {
+      const createShortenedUrlDto: CreateClientDto = {
         originalUrl: 'https://example.com',
       };
 
@@ -84,7 +84,7 @@ describe('UrlShortenerService', () => {
     });
 
     it('should create a shortened URL with a user', async () => {
-      const createShortenedUrlDto: CreateShortenedUrlDto = {
+      const createShortenedUrlDto: CreateClientDto = {
         originalUrl: 'https://example.com',
       };
 
@@ -144,7 +144,7 @@ describe('UrlShortenerService', () => {
     });
 
     it('should create a shortened URL with a base URL that does not end with a slash', async () => {
-      const createShortenedUrlDto: CreateShortenedUrlDto = {
+      const createShortenedUrlDto: CreateClientDto = {
         originalUrl: 'https://example.com',
       };
 
@@ -193,7 +193,7 @@ describe('UrlShortenerService', () => {
     it('should throw UnauthorizedException if user is not found', async () => {
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(null);
 
-      const createShortenedUrlDto: CreateShortenedUrlDto = {
+      const createShortenedUrlDto: CreateClientDto = {
         originalUrl: 'https://example.com',
       };
 
@@ -306,7 +306,7 @@ describe('UrlShortenerService', () => {
   describe('updateShortenedUrl', () => {
     it('should update the shortened URL', async () => {
       const shortCode = 'abc123';
-      const updateShortenedUrlDto: UpdateShortenedUrlDto = {
+      const updateShortenedUrlDto: UpdateClientlDto = {
         originalUrl: 'https://new-example.com',
       };
       const userId = 1;

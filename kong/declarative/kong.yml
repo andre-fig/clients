@@ -9,7 +9,7 @@ jwt_secrets:
     secret: 'your_jwt_secret'
 
 services:
-  - name: auth-service
+  - name: client-api
     url: http://auth-service:3000
     routes:
       - name: hello-world

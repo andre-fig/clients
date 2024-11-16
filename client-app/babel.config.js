@@ -1,5 +1,5 @@
 module.exports = {
-  presets: ['babel-preset-expo'],
+  presets: ['babel-preset-expo', '@react-native/babel-preset'],
   plugins: [
     ['@babel/plugin-transform-class-properties', { loose: true }],
     ['@babel/plugin-transform-private-methods', { loose: true }],

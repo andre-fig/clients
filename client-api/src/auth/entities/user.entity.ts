@@ -1,17 +1,17 @@
 import { Exclude } from 'class-transformer';
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Client } from 'src/client/entities/client.entity';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ unique: true })
-  email: string;
+  @Column({ name: 'name' })
+  name: string;
 
-  @Column()
-  @Exclude()
-  password: string;
+  @OneToMany(() => Client, (client) => client.createdBy)
+  clients: Client[];
 
   @Column({
     type: 'timestamp',

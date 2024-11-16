@@ -1,19 +1,19 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { UrlShortenerController } from '../client.controller';
+import { ClientController } from '../client.controller';
 import { UrlShortenerService } from '../client.service';
-import { CreateShortenedUrlDto } from '../dtos/create-shortened-url.dto';
-import { UpdateShortenedUrlDto } from '../dtos/update-shortened-url.dto';
+import { CreateClientDto } from '../dtos/create-client.dto';
+import { UpdateClientlDto } from '../dtos/update-client.dto';
 import { NotFoundException } from '@nestjs/common';
 import { Response } from 'express';
 import { ShortenedUrl } from '../entities/client.entity';
 
 describe('UrlShortenerController', () => {
-  let urlShortenerController: UrlShortenerController;
+  let urlShortenerController: ClientController;
   let urlShortenerService: UrlShortenerService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      controllers: [UrlShortenerController],
+      controllers: [ClientController],
       providers: [
         {
           provide: UrlShortenerService,
@@ -28,15 +28,13 @@ describe('UrlShortenerController', () => {
       ],
     }).compile();
 
-    urlShortenerController = module.get<UrlShortenerController>(
-      UrlShortenerController,
-    );
+    urlShortenerController = module.get<ClientController>(ClientController);
     urlShortenerService = module.get<UrlShortenerService>(UrlShortenerService);
   });
 
   describe('shortenUrl', () => {
     it('should create a shortened URL', async () => {
-      const createShortenedUrlDto: CreateShortenedUrlDto = {
+      const createShortenedUrlDto: CreateClientDto = {
         originalUrl: 'https://example.com',
       };
       const result = {
@@ -132,7 +130,7 @@ describe('UrlShortenerController', () => {
   describe('updateShortenedUrl', () => {
     it('should update the shortened URL', async () => {
       const shortCode = 'abc123';
-      const updateShortenedUrlDto: UpdateShortenedUrlDto = {
+      const updateShortenedUrlDto: UpdateClientlDto = {
         originalUrl: 'https://new-example.com',
       };
       const userId = 1;
