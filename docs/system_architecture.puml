@@ -1,0 +1,29 @@
+
+@startuml
+title System Architecture with AWS and BullMQ
+
+skinparam backgroundColor #f9f9f9
+skinparam componentStyle rectangle
+
+node "Mobile App" {
+  [React Native + Expo]
+}
+
+node "Back-End API" {
+  [Nest.js API] --> [BullMQ + Redis]
+  [Nest.js API] --> [PostgreSQL (AWS RDS)]
+  [Nest.js API] --> [AWS S3]
+  [Nest.js API] --> [AWS CloudWatch]
+}
+
+node "BullMQ + Redis" {
+  [Redis] --> [Worker]
+}
+
+cloud "AWS" {
+  [PostgreSQL (AWS RDS)]
+  [AWS S3]
+  [AWS CloudWatch]
+}
+
+@enduml
