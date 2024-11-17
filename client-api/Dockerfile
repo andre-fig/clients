@@ -3,7 +3,7 @@ FROM node:20 AS development
 WORKDIR /app
 
 # Copiar o yarn.lock da raiz do monorepo e o package.json específico do serviço
-COPY yarn.lock ./
+COPY ./client-api/yarn.lock ./
 COPY ./client-api/package.json ./
 
 # Instalar dependências de desenvolvimento

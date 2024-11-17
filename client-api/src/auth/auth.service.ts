@@ -37,7 +37,7 @@ export class AuthService {
     return this.usersRepository.save(newUser);
   }
 
-  public async validateUserById(id: number): Promise<User | null> {
+  public async validateUserById(id: string): Promise<User | null> {
     return await this.usersRepository.findOne({ where: { id } });
   }
 }

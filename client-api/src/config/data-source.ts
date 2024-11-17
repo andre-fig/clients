@@ -1,9 +1,10 @@
 import { DataSource } from 'typeorm';
-
+import { config } from 'dotenv';
 import { validateEnvVars } from './setup';
 import { Client } from 'src/client/entities/client.entity';
 import { User } from 'src/auth/entities/user.entity';
 
+config(); 
 validateEnvVars();
 
 export const AppDataSource = new DataSource({
