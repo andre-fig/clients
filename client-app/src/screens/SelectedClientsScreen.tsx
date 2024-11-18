@@ -69,7 +69,7 @@ export const SelectedClientsScreen: React.FC<Props> = ({ route }) => {
       ) : (
         filteredClients.map((client) => (
           <View key={client.id} style={styles.card}>
-            <Text style={styles.clientName}>{client.name}</Text>
+            <Text style={styles.clientName}>{String(client.name)}</Text>
             <Text>Salário: {formatCurrency(client.salary)}</Text>
             <Text>Empresa: {formatCurrency(client.companyValue)}</Text>
             <View style={styles.selectedCardActions}>
@@ -86,7 +86,6 @@ export const SelectedClientsScreen: React.FC<Props> = ({ route }) => {
           </View>
         ))
       )}
-      {/* Botão para limpar todos os clientes selecionados */}
       <TouchableOpacity style={styles.createButton} onPress={handleClearAll}>
         <Text style={styles.createButtonText}>
           Limpar clientes selecionados

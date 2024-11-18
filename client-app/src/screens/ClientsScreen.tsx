@@ -15,6 +15,7 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
 import { useSelectedClients } from '../contexts/SelectedClientsContext';
+import DropDownPicker from 'react-native-dropdown-picker';
 
 interface Client {
   id: string;
@@ -34,9 +35,16 @@ export const ClientsScreen = () => {
     salary: '',
     companyValue: '',
   });
-
+  const [clientsPerPage, setClientsPerPage] = useState(10); 
   const { selectedClients, setSelectedClients } = useSelectedClients(); 
   const navigation = useNavigation<NavigationProps>();
+  const [items, setItems] = useState([
+    { label: '5', value: 5 },
+    { label: '10', value: 10 },
+    { label: '15', value: 15 },
+    { label: '20', value: 20 },
+  ]);
+  const [open, setOpen] = useState(false);
 
   const handleNavigateToSelected = () => {
     const filteredClients = clients.filter((client) =>
@@ -51,8 +59,12 @@ export const ClientsScreen = () => {
 
   const fetchClients = async () => {
     try {
-      setLoading(true); 
-      const response = await api.get('/client');
+      setLoading(true);
+      const response = await api.get('/client', {
+        params: {
+          limit: clientsPerPage, 
+        },
+      });
       setClients(response.data.clients);
     } catch (error) {
       console.error('Erro ao buscar clientes:', error);
@@ -64,7 +76,7 @@ export const ClientsScreen = () => {
 
   useEffect(() => {
     fetchClients();
-  }, []);
+  }, [clientsPerPage]); 
 
   const handleSelect = (id: string) => {
     setSelectedClients((prev) =>
@@ -169,12 +181,35 @@ export const ClientsScreen = () => {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <View style={styles.selection}>  
       <Text>
         <Text style={styles.boldText}>{clients.length}</Text> clientes
         encontrados:
       </Text>
+      <View style={styles.clientsPerPage}>  
       <Text>Clientes por página:</Text>
+     
+
+      <DropDownPicker
+        open={open}
+        value={clientsPerPage}
+        items={items}
+        setOpen={setOpen}
+        setValue={setClientsPerPage}
+        setItems={setItems}
+        style={styles.dropdown}
+        containerStyle={{
+          width: 75,
+          height: 40,
+        }}
+        textStyle={{
+          fontSize: 12,
+        }}
+      />
+       </View>
+
+
+      <ScrollView contentContainerStyle={styles.container}>
       {clients.map((item) => (
         <View key={item.id} style={styles.card}>
           <Text style={styles.clientName}>{item.name}</Text>
@@ -290,13 +325,37 @@ export const ClientsScreen = () => {
         </View>
       </Modal>
     </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  selection: {
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    // gap: 20,
+    paddingTop: 20,
+    backgroundColor: '#f9f9f9',
+    width: '100%',
+  },
+  clientsPerPage: {
+    flexDirection: 'row', 
+    justifyContent: 'center', 
+    alignItems: 'center',
+    width: '100%',
+    gap: 20,
+  },  
+  dropdown: {
+    marginTop: 5,
+    borderColor: '#ccc',
+    width: 67,
+    backgroundColor: '#f9f9f9',
+    minHeight: 30, 
+  },
   container: {
     flexGrow: 1,
     padding: 20,
+    paddingTop: 10,
     gap: 10,
     backgroundColor: '#f9f9f9',
     alignItems: 'center',
@@ -455,4 +514,5 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#fff',
   },
+
 });
