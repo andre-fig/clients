@@ -2,16 +2,21 @@
 
 ## Sumário
 
-1. [Questionamento](#questionamento-acerca-do-desenvolvimento-do-painel-administrativo)
-2. [Estrutura Sugerida]
-3. [Descrição](#descrição)
-4. [Funcionalidades](#funcionalidades)
-5. [Pré-requisitos](#pré-requisitos)
-6. [Usando a Aplicação](#usando-a-aplicação)
-7. [Testes](#testes)
-8. [Pontos de Melhoria](#pontos-de-melhoria)
+1. [Demonstração](#demonstração)
+2. [Questionamento](#questionamento-acerca-do-desenvolvimento-do-painel-administrativo)
+3. [Estrutura Sugerida](#estrutura-sugerida-para-o-client-app)
+4. [Descrição](#descrição)
+5. [Funcionalidades](#funcionalidades)
+6. [Pré-requisitos](#pré-requisitos)
+7. [Usando a Aplicação](#usando-a-aplicação)
+8. [Testes](#testes)
+9. [Pontos de Melhoria](#pontos-de-melhoria)
    - [Escalabilidade Horizontal](#escalabilidade-horizontal)
    - [Migração para OAuth](#migração-para-oauth)
+
+## Demonstração
+
+Veja o sistema em funcionamento neste [vídeo demonstrativo](https://www.youtube.com/watch?v=RhPaOpDePy4).
 
 ## Questionamento acerca do Desenvolvimento do Painel Administrativo
 
@@ -74,7 +79,18 @@ Recomenda-se uma equipe composta por um ou dois desenvolvedores, dependendo do p
   - 1 Desenvolvedor Backend (Pleno ou Sênior):
   - 1 Desenvolvedor Frontend (Pleno);
 
-## Arquitetura sugerida para o Client App
+## Estrutura sugerida para o Client App
+
+### Fluxo de Dados
+
+1. O usuário realiza uma ação no aplicativo.
+2. A requisição é enviada ao API Gateway (Kong) para autenticação e roteamento.
+3. O backend processa a lógica e interage com:
+   - PostgreSQL para dados estruturados.
+   - AWS S3 para armazenamento de arquivos.
+   - Redis (BullMQ) para filas ou caching.
+4. Logs e métricas são enviados ao AWS CloudWatch.
+5. A resposta é retornada ao frontend.
 
 ### 1. Mobile App (Frontend)
 
@@ -181,12 +197,6 @@ yarn test:cov
 ```
 
 ## Pontos de Melhoria
-
-### Escalabilidade Horizontal
-
-Para suportar um crescimento horizontal, onde o sistema precisa ser escalado para múltiplas instâncias, algumas melhorias podem ser implementadas:
-
-- Cache: Implementar um sistema de cache, como Redis, para armazenar URLs encurtadas e reduzir a carga no banco de dados.
 
 ### Migração para OAuth
 
