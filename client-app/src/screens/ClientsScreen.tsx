@@ -22,6 +22,7 @@ interface Client {
 
 export const ClientsScreen = () => {
   const [clients, setClients] = useState<Client[]>([]);
+  const [selectedClients, setSelectedClients] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [newClient, setNewClient] = useState({
@@ -34,7 +35,7 @@ export const ClientsScreen = () => {
     const fetchClients = async () => {
       try {
         const response = await api.get('/client');
-        setClients(response.data.clients); 
+        setClients(response.data.clients);
       } catch (error) {
         console.error('Erro ao buscar clientes:', error);
         Alert.alert('Erro', 'Não foi possível carregar os clientes.');
@@ -46,7 +47,16 @@ export const ClientsScreen = () => {
     fetchClients();
   }, []);
 
-  const handleSelect = (id: string) => alert(`Selecionar cliente ${id}`);
+  const handleSelect = (id: string) => {
+    setSelectedClients((prev) =>
+      prev.includes(id) ? prev.filter((clientId) => clientId !== id) : [...prev, id]
+    );
+  };
+
+  const handleClearSelection = () => {
+    setSelectedClients([]);
+  };
+
   const handleEdit = (id: string) => alert(`Editar cliente ${id}`);
   const handleDelete = (id: string, name: string) => {
     Alert.alert(
@@ -57,7 +67,7 @@ export const ClientsScreen = () => {
           text: 'Excluir cliente',
           onPress: () => {
             setClients((prevClients) =>
-              prevClients.filter((client) => client.id !== id),
+              prevClients.filter((client) => client.id !== id)
             );
             alert(`Cliente ${name} excluído com sucesso.`);
           },
@@ -67,11 +77,9 @@ export const ClientsScreen = () => {
           text: 'Cancelar',
           style: 'cancel',
         },
-      ],
+      ]
     );
   };
-
-  const handleCreate = () => setModalVisible(true);
 
   const handleCreateClient = () => {
     if (!newClient.name || !newClient.salary || !newClient.companyValue) {
@@ -84,10 +92,10 @@ export const ClientsScreen = () => {
         id: Math.random().toString(),
         name: newClient.name,
         salary: parseFloat(
-          newClient.salary.replace(/\./g, '').replace(',', '.'),
+          newClient.salary.replace(/\./g, '').replace(',', '.')
         ),
         companyValue: parseFloat(
-          newClient.companyValue.replace(/\./g, '').replace(',', '.'),
+          newClient.companyValue.replace(/\./g, '').replace(',', '.')
         ),
       },
     ]);
@@ -144,39 +152,58 @@ export const ClientsScreen = () => {
           <Text style={styles.textDetail}>
             Empresa: {formatCurrency(item.companyValue)}
           </Text>
-          <View style={styles.cardActions}>
+          <View
+            style={selectedClients.includes(item.id)
+                ? styles.selectedCardActions
+                : styles.cardActions}
+          >
             <TouchableOpacity
               style={styles.actionButton}
               onPress={() => handleSelect(item.id)}
             >
               <Image
-                source={require('../../assets/plus-icon.png')}
+                source={
+                  selectedClients.includes(item.id)
+                    ? require('../../assets/unselect-icon.png')
+                    : require('../../assets/plus-icon.png')
+                }
                 style={styles.actionIcon}
               />
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => handleEdit(item.id)}
-            >
-              <Image
-                source={require('../../assets/pencil-icon.png')}
-                style={styles.actionIcon}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => handleDelete(item.id, item.name)}
-            >
-              <Image
-                source={require('../../assets/trash-icon.png')}
-                style={styles.actionIcon}
-              />
-            </TouchableOpacity>
+            {!selectedClients.includes(item.id) && (
+              <>
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={() => handleEdit(item.id)}
+                >
+                  <Image
+                    source={require('../../assets/pencil-icon.png')}
+                    style={styles.actionIcon}
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={() => handleDelete(item.id, item.name)}
+                >
+                  <Image
+                    source={require('../../assets/trash-icon.png')}
+                    style={styles.actionIcon}
+                  />
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         </View>
       ))}
-      <TouchableOpacity style={styles.createButton} onPress={handleCreate}>
-        <Text style={styles.createButtonText}>Criar cliente</Text>
+      <TouchableOpacity
+        style={styles.createButton}
+        onPress={
+          selectedClients.length > 0 ? handleClearSelection : () => setModalVisible(true)
+        }
+      >
+        <Text style={styles.createButtonText}>
+          {selectedClients.length > 0 ? 'Limpar clientes selecionados' : 'Criar cliente'}
+        </Text>
       </TouchableOpacity>
 
       <Modal
@@ -252,6 +279,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 5,
+    width: '100%',
   },
   clientName: {
     fontFamily: 'Inter',
@@ -266,6 +294,11 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     lineHeight: 17,
     color: '#000',
+  },
+  selectedCardActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    width: '100%',
   },
   cardActions: {
     flexDirection: 'row',
