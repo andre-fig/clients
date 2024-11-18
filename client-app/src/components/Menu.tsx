@@ -55,9 +55,21 @@ const Menu: React.FC<MenuProps> = ({ isVisible, onClose, currentScreen }) => {
   };
 
   const options = [
-    { name: 'Home', screen: 'Login' },
-    { name: 'Clientes', screen: 'Clients' },
-    { name: 'Produtos', screen: 'NotFound' },
+    {
+      name: 'Home',
+      screen: 'Login',
+      icon: require('../../assets/home-icon.png'),
+    },
+    {
+      name: 'Clientes',
+      screen: 'Clients',
+      icon: require('../../assets/client-icon.png'),
+    },
+    {
+      name: 'Produtos',
+      screen: 'NotFound',
+      icon: require('../../assets/product-icon.png'),
+    },
   ] as const;
 
   if (!isVisible) {
@@ -77,9 +89,20 @@ const Menu: React.FC<MenuProps> = ({ isVisible, onClose, currentScreen }) => {
               {options.map((option) => (
                 <TouchableOpacity
                   key={option.name}
-                  style={styles.option}
+                  style={[
+                    styles.option,
+                    option.screen === currentScreen && styles.activeOption,
+                  ]}
                   onPress={() => navigateTo(option.screen)}
                 >
+                  <Image
+                    source={option.icon}
+                    style={[
+                      styles.optionIcon,
+                      option.screen === currentScreen &&
+                        styles.activeOptionIcon,
+                    ]}
+                  />
                   <Text
                     style={[
                       styles.optionText,
@@ -143,14 +166,26 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     paddingHorizontal: 20,
   },
+  activeOption: {
+    borderRightWidth: 3,
+    borderColor: '#EE7D46',
+  },
+  optionIcon: {
+    width: 20,
+    height: 20,
+    tintColor: '#000',
+  },
+  activeOptionIcon: {
+    tintColor: '#EE7D46',
+  },
   optionText: {
     marginLeft: 10,
     fontSize: 16,
     fontWeight: '600',
-    color: '#000', // Cor padrão
+    color: '#000',
   },
   activeOptionText: {
-    color: '#EE7D46', // Cor laranja para a página atual
+    color: '#EE7D46',
   },
 });
 
