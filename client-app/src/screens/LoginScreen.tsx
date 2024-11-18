@@ -7,16 +7,33 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
+import api from '../api/api'; 
+import { useAuth } from '../contexts/AuthContext';
 
 export const LoginScreen = ({ navigation }: any) => {
   const [name, setName] = useState('');
+  const { login } = useAuth();
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (name.trim() === '') {
       Alert.alert('Erro', 'Por favor, insira seu nome.');
       return;
     }
-    navigation.navigate('Clients');
+
+    try {
+      const response = await api.post('/auth/login', { name });
+      const { access_token } = response.data;
+
+      await login(access_token);
+
+      navigation.navigate('Clients');
+    } catch (error: any) {
+      console.error(error);
+      Alert.alert(
+        'Erro',
+        'Não foi possível fazer login. Por favor, tente novamente.',
+      );
+    }
   };
 
   return (
