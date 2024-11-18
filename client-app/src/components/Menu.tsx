@@ -23,7 +23,7 @@ type RootStackParamList = {
 interface MenuProps {
   isVisible: boolean;
   onClose: () => void;
-  currentScreen: keyof RootStackParamList; // Tela atual
+  currentScreen: keyof RootStackParamList;
 }
 
 const Menu: React.FC<MenuProps> = ({ isVisible, onClose, currentScreen }) => {
@@ -70,8 +70,8 @@ const Menu: React.FC<MenuProps> = ({ isVisible, onClose, currentScreen }) => {
         <Animated.View style={[styles.menuContainer, { left: menuAnimation }]}>
           <View style={styles.fullTopSection}>
             <Image
-              source={require('../assets/teddy-logo.png')} // Caminho para a logo
-              style={styles.logo} // Estilo para a logo
+              source={require('../../assets/teddy-logo.png')}
+              style={styles.logo}
             />
             <View style={styles.optionsContainer}>
               {options.map((option) => (

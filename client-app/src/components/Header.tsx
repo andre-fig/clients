@@ -12,7 +12,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuPress }) => {
       <View style={styles.headerContainer}>
         <View style={styles.logoContainer}>
           <Image
-            source={require('../assets/teddy-logo.png')}
+            source={require('../../assets/teddy-logo.png')}
             style={styles.logo}
             resizeMode="contain"
           />
@@ -20,7 +20,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuPress }) => {
 
         <TouchableOpacity onPress={onMenuPress}>
           <Image
-            source={require('../assets/menu-icon.png')}
+            source={require('../../assets/menu-icon.png')}
             style={styles.menuIcon}
             resizeMode="contain"
           />

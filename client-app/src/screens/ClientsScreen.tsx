@@ -116,7 +116,7 @@ export const ClientsScreen = () => {
               onPress={() => handleSelect(item.id)}
             >
               <Image
-                source={require('../assets/plus-icon.png')}
+                source={require('../../assets/plus-icon.png')}
                 style={styles.actionIcon}
               />
             </TouchableOpacity>
@@ -125,7 +125,7 @@ export const ClientsScreen = () => {
               onPress={() => handleEdit(item.id)}
             >
               <Image
-                source={require('../assets/pencil-icon.png')}
+                source={require('../../assets/pencil-icon.png')}
                 style={styles.actionIcon}
               />
             </TouchableOpacity>
@@ -134,7 +134,7 @@ export const ClientsScreen = () => {
               onPress={() => handleDelete(item.id, item.name)}
             >
               <Image
-                source={require('../assets/trash-icon.png')}
+                source={require('../../assets/trash-icon.png')}
                 style={styles.actionIcon}
               />
             </TouchableOpacity>
