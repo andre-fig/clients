@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   ScrollView,
@@ -10,19 +10,41 @@ import {
   TextInput,
 } from 'react-native';
 import Modal from 'react-native-modal';
+import api from '../api/api';
+
+interface Client {
+  id: string;
+  name: string;
+  salary: number;
+  companyValue: number;
+}
+
 
 export const ClientsScreen = () => {
-  const [clients, setClients] = useState([
-    { id: '1', name: 'João', salary: 3000, companyValue: 50000 },
-    { id: '2', name: 'Maria', salary: 4000, companyValue: 70000 },
-  ]);
-
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [newClient, setNewClient] = useState({
     name: '',
     salary: '',
     companyValue: '',
   });
+
+  useEffect(() => {
+    const fetchClients = async () => {
+      try {
+        const response = await api.get('/client');
+        setClients(response.data.clients); 
+      } catch (error) {
+        console.error('Erro ao buscar clientes:', error);
+        Alert.alert('Erro', 'Não foi possível carregar os clientes.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchClients();
+  }, []);
 
   const handleSelect = (id: string) => alert(`Selecionar cliente ${id}`);
   const handleEdit = (id: string) => alert(`Editar cliente ${id}`);
@@ -74,8 +96,12 @@ export const ClientsScreen = () => {
     Alert.alert('Sucesso', 'Cliente criado com sucesso!');
   };
 
-  const formatCurrency = (value: number) =>
-    value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const formatCurrency = (value: number): string => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(value);
+  };
 
   const handleCurrencyInput = (value: string) => {
     const numericValue = value.replace(/[^0-9]/g, '');
@@ -93,6 +119,14 @@ export const ClientsScreen = () => {
   const handleCompanyValueChange = (text: string) => {
     setNewClient({ ...newClient, companyValue: handleCurrencyInput(text) });
   };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>Carregando clientes...</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -325,5 +359,14 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontWeight: '700',
     textAlign: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#666',
   },
 });
