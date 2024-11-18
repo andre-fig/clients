@@ -1,182 +1,278 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ClientController } from '../client.controller';
-import { UrlShortenerService } from '../client.service';
-import { CreateClientDto } from '../dtos/create-client.dto';
-import { UpdateClientlDto } from '../dtos/update-client.dto';
 import { NotFoundException } from '@nestjs/common';
-import { Response } from 'express';
-import { ShortenedUrl } from '../entities/client.entity';
+import { ClientController } from '../client.controller';
+import { ClientService } from '../client.service';
+import { CreateClientDto } from '../dtos/create-client.dto';
+import { Client } from '../entities/client.entity';
+import { UpdateClientDto } from '../dtos/update-client.dto';
+import { JwtService } from '@nestjs/jwt';
+import { AuthGuard } from '../../auth/guards/auth.guard';
+import { AuthService } from '../../auth/auth.service';
+import { ConfigService } from '@nestjs/config';
+import { LogInterceptor } from '../../log/interceptors/log.interceptor';
+import { LogQueue } from '../../log/queues/log.queue';
 
-describe('UrlShortenerController', () => {
-  let urlShortenerController: ClientController;
-  let urlShortenerService: UrlShortenerService;
+describe('ClientController', () => {
+  let clientController: ClientController;
+  let clientService: ClientService;
+
+  const mockUser = {
+    id: 'user-id',
+    name: 'Test User',
+    email: 'testuser@example.com',
+    clients: [],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    deletedAt: null,
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ClientController],
       providers: [
         {
-          provide: UrlShortenerService,
+          provide: ClientService,
           useValue: {
-            createShortenedUrl: jest.fn(),
-            getOriginalUrl: jest.fn(),
-            getUserShortenedUrls: jest.fn(),
-            updateShortenedUrl: jest.fn(),
-            deleteShortenedUrl: jest.fn(),
+            createClient: jest.fn(),
+            getClientById: jest.fn(),
+            getAllClients: jest.fn(),
+            updateClient: jest.fn(),
+            deleteClient: jest.fn(),
           },
+        },
+        {
+          provide: JwtService,
+          useValue: {
+            sign: jest.fn(),
+            verify: jest.fn(),
+          },
+        },
+        {
+          provide: AuthGuard,
+          useValue: {
+            canActivate: jest.fn().mockReturnValue(true),
+          },
+        },
+        {
+          provide: AuthService,
+          useValue: {
+            validateToken: jest.fn(),
+          },
+        },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn((key: string) => {
+              if (key === 'JWT_SECRET') return 'test-secret';
+              return null;
+            }),
+          },
+        },
+        {
+          provide: LogQueue,
+          useValue: {
+            add: jest.fn(),
+          },
+        },
+        {
+          provide: LogInterceptor,
+          useClass: LogInterceptor,
         },
       ],
     }).compile();
 
-    urlShortenerController = module.get<ClientController>(ClientController);
-    urlShortenerService = module.get<UrlShortenerService>(UrlShortenerService);
+    clientController = module.get<ClientController>(ClientController);
+    clientService = module.get<ClientService>(ClientService);
   });
 
-  describe('shortenUrl', () => {
-    it('should create a shortened URL', async () => {
-      const createShortenedUrlDto: CreateClientDto = {
-        originalUrl: 'https://example.com',
+  describe('create', () => {
+    it('should create a new client', async () => {
+      const createClientDto: CreateClientDto = {
+        name: 'John Doe',
+        salary: 1000,
+        companyValue: 10000,
       };
-      const result = {
-        originalUrl: 'https://example.com',
-        shortenedUrl: 'https://short.ly/abc123',
-      };
-
-      jest
-        .spyOn(urlShortenerService, 'createShortenedUrl')
-        .mockResolvedValue(result);
-
-      const response = await urlShortenerController.shortenUrl(
-        createShortenedUrlDto,
-        1,
-      );
-
-      expect(response).toEqual(result);
-      expect(urlShortenerService.createShortenedUrl).toHaveBeenCalledWith(
-        createShortenedUrlDto,
-        1,
-      );
-    });
-  });
-
-  describe('redirectToOriginal', () => {
-    it('should redirect to the original URL', async () => {
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        send: jest.fn(),
-        redirect: jest.fn(),
-      } as unknown as Response;
-
-      const shortCode = 'abc123';
-      const originalUrl = 'https://example.com';
-
-      jest
-        .spyOn(urlShortenerService, 'getOriginalUrl')
-        .mockResolvedValue(originalUrl);
-
-      await urlShortenerController.redirectToOriginal(shortCode, res);
-
-      expect(urlShortenerService.getOriginalUrl).toHaveBeenCalledWith(
-        shortCode,
-      );
-      expect(res.redirect).toHaveBeenCalledWith(
-        expect.stringContaining(originalUrl),
-      );
-    });
-
-    it('should throw a NotFoundException if the URL is not found', async () => {
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        send: jest.fn(),
-      } as unknown as Response;
-
-      jest.spyOn(urlShortenerService, 'getOriginalUrl').mockResolvedValue(null);
-
-      await expect(
-        urlShortenerController.redirectToOriginal('abc123', res),
-      ).rejects.toThrow(NotFoundException);
-    });
-  });
-
-  describe('getUserShortenedUrls', () => {
-    it('should return the shortened URLs of the user', async () => {
-      const userId = 1;
-      const shortenedUrls: ShortenedUrl[] = [
-        {
-          id: 'uuid',
-          shortCode: 'abc123',
-          originalUrl: 'https://example.com',
-          user: null,
-          clickCount: 0,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          deletedAt: null,
-        } as ShortenedUrl,
-      ];
-
-      jest
-        .spyOn(urlShortenerService, 'getUserShortenedUrls')
-        .mockResolvedValue(shortenedUrls);
-
-      const result = await urlShortenerController.getUserShortenedUrls(userId);
-
-      expect(result).toEqual(shortenedUrls);
-      expect(urlShortenerService.getUserShortenedUrls).toHaveBeenCalledWith(
-        userId,
-      );
-    });
-  });
-
-  describe('updateShortenedUrl', () => {
-    it('should update the shortened URL', async () => {
-      const shortCode = 'abc123';
-      const updateShortenedUrlDto: UpdateClientlDto = {
-        originalUrl: 'https://new-example.com',
-      };
-      const userId = 1;
-
-      const mockUpdatedUrl: ShortenedUrl = {
-        id: 'uuid',
-        originalUrl: 'https://new-example.com',
-        shortCode: shortCode,
-        user: null,
-        clickCount: 0,
+      const userId = 'user-id';
+      const mockClient: Client = {
+        id: 'client-id',
+        name: createClientDto.name,
+        salary: createClientDto.salary,
+        companyValue: createClientDto.companyValue,
+        createdBy: mockUser,
         createdAt: new Date(),
         updatedAt: new Date(),
         deletedAt: null,
       };
 
-      const updateSpy = jest
-        .spyOn(urlShortenerService, 'updateShortenedUrl')
-        .mockResolvedValue(mockUpdatedUrl);
+      jest.spyOn(clientService, 'createClient').mockResolvedValue(mockClient);
 
-      const result = await urlShortenerController.updateShortenedUrl(
-        shortCode,
-        updateShortenedUrlDto,
+      const result = await clientController.create(userId, createClientDto);
+
+      expect(result).toEqual(mockClient);
+      expect(clientService.createClient).toHaveBeenCalledWith(
+        createClientDto,
         userId,
       );
-
-      expect(updateSpy).toHaveBeenCalledWith(
-        shortCode,
-        updateShortenedUrlDto,
-        userId,
-      );
-      expect(result).toEqual({ message: 'Shortened URL updated successfully' });
     });
   });
 
-  describe('deleteShortenedUrl', () => {
-    it('should delete the shortened URL', async () => {
-      const shortCode = 'abc123';
-      const userId = 1;
+  describe('getById', () => {
+    it('should return a client by ID', async () => {
+      const clientId = 'client-id';
+      const mockClient: Client = {
+        id: clientId,
+        name: 'John Doe',
+        salary: 1000,
+        companyValue: 10000,
+        createdBy: mockUser,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: null,
+      };
 
-      const deleteSpy = jest
-        .spyOn(urlShortenerService, 'deleteShortenedUrl')
-        .mockResolvedValue();
+      jest.spyOn(clientService, 'getClientById').mockResolvedValue(mockClient);
 
-      await urlShortenerController.deleteShortenedUrl(shortCode, userId);
+      const result = await clientController.getById(clientId);
 
-      expect(deleteSpy).toHaveBeenCalledWith(shortCode, userId);
+      expect(result).toEqual(mockClient);
+      expect(clientService.getClientById).toHaveBeenCalledWith(clientId);
+    });
+
+    it('should throw NotFoundException if client is not found', async () => {
+      jest.spyOn(clientService, 'getClientById').mockResolvedValue(null);
+
+      await expect(clientController.getById('invalid-id')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('getAll', () => {
+    it('should return a paginated list of clients', async () => {
+      const mockClients: Client[] = [
+        {
+          id: 'client-id',
+          name: 'John Doe',
+          salary: 1000,
+          companyValue: 10000,
+          createdBy: mockUser,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          deletedAt: null,
+        },
+      ];
+      const total = 1;
+
+      jest.spyOn(clientService, 'getAllClients').mockResolvedValue({
+        total,
+        clients: mockClients,
+      });
+
+      const result = await clientController.getAll(1, 10);
+
+      expect(result).toEqual({ total, clients: mockClients });
+      expect(clientService.getAllClients).toHaveBeenCalledWith(1, 10);
+    });
+
+    it('should return a paginated list of clients with no page and limit', async () => {
+      const mockClients: Client[] = [
+        {
+          id: 'client-id',
+          name: 'John Doe',
+          salary: 1000,
+          companyValue: 10000,
+          createdBy: mockUser,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          deletedAt: null,
+        },
+      ];
+      const total = 1;
+
+      jest.spyOn(clientService, 'getAllClients').mockResolvedValue({
+        total,
+        clients: mockClients,
+      });
+
+      const result = await clientController.getAll();
+
+      expect(result).toEqual({ total, clients: mockClients });
+      expect(clientService.getAllClients).toHaveBeenCalledWith(1, 10);
+    });
+  });
+
+  describe('update', () => {
+    it('should update a client', async () => {
+      const clientId = 'client-id';
+      const updateClientDto: UpdateClientDto = {
+        name: 'Updated Client',
+        salary: 2000,
+        companyValue: 15000,
+      };
+
+      const mockUpdatedClient: Client = {
+        id: clientId,
+        name: updateClientDto.name,
+        salary: updateClientDto.salary,
+        companyValue: updateClientDto.companyValue,
+        createdBy: mockUser,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: null,
+      };
+
+      jest
+        .spyOn(clientService, 'updateClient')
+        .mockResolvedValue(mockUpdatedClient);
+
+      const result = await clientController.update(clientId, updateClientDto);
+
+      expect(result).toEqual(mockUpdatedClient);
+      expect(clientService.updateClient).toHaveBeenCalledWith(
+        clientId,
+        updateClientDto,
+      );
+    });
+
+    it('should throw NotFoundException if client is not found', async () => {
+      const clientId = 'client-id';
+      const updateClientDto: UpdateClientDto = {
+        name: 'Updated Client',
+        salary: 2000,
+        companyValue: 15000,
+      };
+
+      jest
+        .spyOn(clientService, 'updateClient')
+        .mockRejectedValue(new NotFoundException());
+
+      await expect(
+        clientController.update(clientId, updateClientDto),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('delete', () => {
+    it('should delete a client', async () => {
+      const clientId = 'client-id';
+
+      jest.spyOn(clientService, 'deleteClient').mockResolvedValue();
+
+      await clientController.delete(clientId);
+
+      expect(clientService.deleteClient).toHaveBeenCalledWith(clientId);
+    });
+
+    it('should throw NotFoundException if client is not found', async () => {
+      const clientId = 'client-id';
+
+      jest
+        .spyOn(clientService, 'deleteClient')
+        .mockRejectedValue(new NotFoundException());
+
+      await expect(clientController.delete(clientId)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

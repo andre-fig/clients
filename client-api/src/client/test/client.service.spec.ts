@@ -1,467 +1,244 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { UrlShortenerService } from '../client.service';
 import { Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { ShortenedUrl } from '../entities/client.entity';
-import { User } from '../entities/user.entity';
+import { NotFoundException } from '@nestjs/common';
+import { Client } from '../entities/client.entity';
+import { ClientService } from '../client.service';
 import { CreateClientDto } from '../dtos/create-client.dto';
-import { UpdateClientlDto } from '../dtos/update-client.dto';
-import { NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { UpdateClientDto } from '../dtos/update-client.dto';
 
-describe('UrlShortenerService', () => {
-  let urlShortenerService: UrlShortenerService;
-  let shortenedUrlRepository: Repository<ShortenedUrl>;
-  let userRepository: Repository<User>;
+describe('ClientService', () => {
+  let clientService: ClientService;
+  let clientRepository: Repository<Client>;
+
+  const mockUser = {
+    id: 'user-id',
+    name: 'Test User',
+    email: 'testuser@example.com',
+    clients: [],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    deletedAt: null,
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        UrlShortenerService,
+        ClientService,
         {
-          provide: getRepositoryToken(ShortenedUrl),
-          useClass: Repository,
-        },
-        {
-          provide: getRepositoryToken(User),
+          provide: getRepositoryToken(Client),
           useClass: Repository,
         },
       ],
     }).compile();
 
-    urlShortenerService = module.get<UrlShortenerService>(UrlShortenerService);
-    shortenedUrlRepository = module.get<Repository<ShortenedUrl>>(
-      getRepositoryToken(ShortenedUrl),
+    clientService = module.get<ClientService>(ClientService);
+    clientRepository = module.get<Repository<Client>>(
+      getRepositoryToken(Client),
     );
-    userRepository = module.get<Repository<User>>(getRepositoryToken(User));
   });
 
-  describe('createShortenedUrl', () => {
-    it('should create a shortened URL without a user', async () => {
-      const createShortenedUrlDto: CreateClientDto = {
-        originalUrl: 'https://example.com',
+  describe('createClient', () => {
+    it('should create a new client', async () => {
+      const createClientDto: CreateClientDto = {
+        name: 'John Doe',
+        salary: 1000,
+        companyValue: 10000,
       };
-
-      jest.spyOn(shortenedUrlRepository, 'findOne').mockResolvedValueOnce(null);
-
-      const mockShortenedUrl: ShortenedUrl = {
-        id: 'uuid',
-        originalUrl: 'https://example.com',
-        shortCode: 'abc123',
-        user: null,
-        clickCount: 0,
+      const userId = 'user-id';
+      const mockClient: Client = {
+        id: 'client-id',
+        name: createClientDto.name,
+        salary: createClientDto.salary,
+        companyValue: createClientDto.companyValue,
+        createdBy: mockUser,
         createdAt: new Date(),
         updatedAt: new Date(),
         deletedAt: null,
       };
 
-      jest
-        .spyOn(shortenedUrlRepository, 'create')
-        .mockReturnValue(mockShortenedUrl);
-      jest
-        .spyOn(shortenedUrlRepository, 'save')
-        .mockResolvedValue(mockShortenedUrl);
+      jest.spyOn(clientRepository, 'create').mockReturnValue(mockClient);
+      jest.spyOn(clientRepository, 'save').mockResolvedValue(mockClient);
 
-      process.env.BASE_URL = 'http://localhost:3000/';
+      const result = await clientService.createClient(createClientDto, userId);
 
-      const result = await urlShortenerService.createShortenedUrl(
-        createShortenedUrlDto,
-      );
-
-      expect(result).toEqual({
-        originalUrl: 'https://example.com',
-        shortenedUrl: expect.stringContaining(
-          'http://localhost:3000/shortened-url/',
-        ),
+      expect(result).toEqual(mockClient);
+      expect(clientRepository.create).toHaveBeenCalledWith({
+        ...createClientDto,
+        createdBy: { id: userId },
       });
-      expect(shortenedUrlRepository.create).toHaveBeenCalledWith({
-        originalUrl: 'https://example.com',
-        shortCode: expect.stringMatching(/^[a-z0-9]{6}$/),
-        user: null,
-      });
-      expect(shortenedUrlRepository.save).toHaveBeenCalledWith(
-        mockShortenedUrl,
-      );
-    });
-
-    it('should create a shortened URL with a user', async () => {
-      const createShortenedUrlDto: CreateClientDto = {
-        originalUrl: 'https://example.com',
-      };
-
-      const mockUser: User = {
-        id: 1,
-        email: 'test@example.com',
-        password: 'hashedPassword',
-        shortenedUrls: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        deletedAt: null,
-      };
-
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser);
-      jest.spyOn(shortenedUrlRepository, 'findOne').mockResolvedValueOnce(null);
-
-      const mockShortenedUrl: ShortenedUrl = {
-        id: 'uuid',
-        originalUrl: 'https://example.com',
-        shortCode: 'abc123',
-        user: mockUser,
-        clickCount: 0,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        deletedAt: null,
-      };
-
-      jest
-        .spyOn(shortenedUrlRepository, 'create')
-        .mockReturnValue(mockShortenedUrl);
-      jest
-        .spyOn(shortenedUrlRepository, 'save')
-        .mockResolvedValue(mockShortenedUrl);
-
-      process.env.BASE_URL = 'http://localhost:3000/';
-
-      const result = await urlShortenerService.createShortenedUrl(
-        createShortenedUrlDto,
-        mockUser.id,
-      );
-
-      expect(result).toEqual({
-        originalUrl: 'https://example.com',
-        shortenedUrl: expect.stringContaining(
-          'http://localhost:3000/shortened-url/',
-        ),
-        user: mockUser,
-      });
-      expect(shortenedUrlRepository.create).toHaveBeenCalledWith({
-        originalUrl: 'https://example.com',
-        shortCode: expect.stringMatching(/^[a-z0-9]{6}$/),
-        user: mockUser,
-      });
-      expect(shortenedUrlRepository.save).toHaveBeenCalledWith(
-        mockShortenedUrl,
-      );
-    });
-
-    it('should create a shortened URL with a base URL that does not end with a slash', async () => {
-      const createShortenedUrlDto: CreateClientDto = {
-        originalUrl: 'https://example.com',
-      };
-
-      jest.spyOn(shortenedUrlRepository, 'findOne').mockResolvedValueOnce(null);
-
-      const mockShortenedUrl: ShortenedUrl = {
-        id: 'uuid',
-        originalUrl: 'https://example.com',
-        shortCode: 'abc123',
-        user: null,
-        clickCount: 0,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        deletedAt: null,
-      };
-
-      jest
-        .spyOn(shortenedUrlRepository, 'create')
-        .mockReturnValue(mockShortenedUrl);
-      jest
-        .spyOn(shortenedUrlRepository, 'save')
-        .mockResolvedValue(mockShortenedUrl);
-
-      process.env.BASE_URL = 'http://localhost:3000';
-
-      const result = await urlShortenerService.createShortenedUrl(
-        createShortenedUrlDto,
-      );
-
-      expect(result).toEqual({
-        originalUrl: 'https://example.com',
-        shortenedUrl: expect.stringContaining(
-          'http://localhost:3000/shortened-url/',
-        ),
-      });
-      expect(shortenedUrlRepository.create).toHaveBeenCalledWith({
-        originalUrl: 'https://example.com',
-        shortCode: expect.stringMatching(/^[a-z0-9]{6}$/),
-        user: null,
-      });
-      expect(shortenedUrlRepository.save).toHaveBeenCalledWith(
-        mockShortenedUrl,
-      );
-    });
-
-    it('should throw UnauthorizedException if user is not found', async () => {
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(null);
-
-      const createShortenedUrlDto: CreateClientDto = {
-        originalUrl: 'https://example.com',
-      };
-
-      await expect(
-        urlShortenerService.createShortenedUrl(createShortenedUrlDto, 1),
-      ).rejects.toThrow(UnauthorizedException);
+      expect(clientRepository.save).toHaveBeenCalledWith(mockClient);
     });
   });
 
-  describe('getOriginalUrl', () => {
-    it('should return the original URL and increment click count', async () => {
-      const shortCode = 'abc123';
-      const mockShortenedUrl: ShortenedUrl = {
-        id: 'uuid',
-        originalUrl: 'https://example.com',
-        shortCode,
-        user: null,
-        clickCount: 0,
+  describe('getClientById', () => {
+    it('should return the client by ID', async () => {
+      const clientId = 'client-id';
+      const mockClient: Client = {
+        id: clientId,
+        name: 'John Doe',
+        salary: 1000,
+        companyValue: 10000,
+        createdBy: mockUser,
         createdAt: new Date(),
         updatedAt: new Date(),
         deletedAt: null,
       };
 
-      jest
-        .spyOn(shortenedUrlRepository, 'findOne')
-        .mockResolvedValue(mockShortenedUrl);
-      jest
-        .spyOn(shortenedUrlRepository, 'save')
-        .mockResolvedValue(mockShortenedUrl);
+      jest.spyOn(clientRepository, 'findOne').mockResolvedValue(mockClient);
 
-      const result = await urlShortenerService.getOriginalUrl(shortCode);
+      const result = await clientService.getClientById(clientId);
 
-      expect(result).toBe('https://example.com');
-      expect(mockShortenedUrl.clickCount).toBe(1);
-      expect(shortenedUrlRepository.save).toHaveBeenCalledWith(
-        mockShortenedUrl,
-      );
+      expect(result).toEqual(mockClient);
+      expect(clientRepository.findOne).toHaveBeenCalledWith({
+        where: { id: clientId },
+      });
     });
 
-    it('should return null if URL is not found', async () => {
-      jest.spyOn(shortenedUrlRepository, 'findOne').mockResolvedValue(null);
+    it('should throw NotFoundException if client is not found', async () => {
+      jest.spyOn(clientRepository, 'findOne').mockResolvedValue(null);
 
-      const result = await urlShortenerService.getOriginalUrl('invalidCode');
-
-      expect(result).toBeNull();
+      await expect(clientService.getClientById('invalid-id')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
-  describe('getUserShortenedUrls', () => {
-    it('should return shortened URLs for the user', async () => {
-      const userId = 1;
-      const mockUser: User = {
-        id: userId,
-        email: 'test@example.com',
-        password: 'hashedPassword',
-        shortenedUrls: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        deletedAt: null,
-      };
-
-      const mockShortenedUrls: ShortenedUrl[] = [
+  describe('getAllClients', () => {
+    it('should return a paginated list of clients', async () => {
+      const mockClients: Client[] = [
         {
-          id: 'uuid',
-          originalUrl: 'https://example.com',
-          shortCode: 'abc123',
-          user: mockUser,
-          clickCount: 0,
+          id: 'client-id',
+          name: 'John Doe',
+          salary: 1000,
+          companyValue: 10000,
+          createdBy: mockUser,
           createdAt: new Date(),
           updatedAt: new Date(),
           deletedAt: null,
         },
       ];
+      const total = 1;
 
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser);
       jest
-        .spyOn(shortenedUrlRepository, 'find')
-        .mockResolvedValue(mockShortenedUrls);
+        .spyOn(clientRepository, 'findAndCount')
+        .mockResolvedValue([mockClients, total]);
 
-      const result = await urlShortenerService.getUserShortenedUrls(userId);
+      const result = await clientService.getAllClients(1, 10);
 
-      expect(result).toEqual([
-        expect.objectContaining({
-          id: 'uuid',
-          originalUrl: 'https://example.com',
-          shortCode: 'abc123',
-          user: mockUser,
-          clickCount: 0,
-          createdAt: mockShortenedUrls[0].createdAt,
-          updatedAt: mockShortenedUrls[0].updatedAt,
+      expect(result).toEqual({ total, clients: mockClients });
+      expect(clientRepository.findAndCount).toHaveBeenCalledWith({
+        skip: 0,
+        take: 10,
+        order: { updatedAt: 'DESC' },
+      });
+    });
+
+    it('should return a paginated list of clients with no page and limit', async () => {
+      const mockClients: Client[] = [
+        {
+          id: 'client-id',
+          name: 'John Doe',
+          salary: 1000,
+          companyValue: 10000,
+          createdBy: mockUser,
+          createdAt: new Date(),
+          updatedAt: new Date(),
           deletedAt: null,
-          shortenedUrl: expect.stringContaining('abc123'),
-        }),
-      ]);
+        },
+      ];
+      const total = 1;
 
-      expect(shortenedUrlRepository.find).toHaveBeenCalledWith({
-        where: { user: { id: userId } },
+      jest
+        .spyOn(clientRepository, 'findAndCount')
+        .mockResolvedValue([mockClients, total]);
+
+      const result = await clientService.getAllClients();
+
+      expect(result).toEqual({ total, clients: mockClients });
+      expect(clientRepository.findAndCount).toHaveBeenCalledWith({
+        skip: 0,
+        take: 10,
+        order: { updatedAt: 'DESC' },
       });
-    });
-
-    it('should throw UnauthorizedException if user is not found', async () => {
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(null);
-
-      await expect(urlShortenerService.getUserShortenedUrls(1)).rejects.toThrow(
-        UnauthorizedException,
-      );
     });
   });
 
-  describe('updateShortenedUrl', () => {
-    it('should update the shortened URL', async () => {
-      const shortCode = 'abc123';
-      const updateShortenedUrlDto: UpdateClientlDto = {
-        originalUrl: 'https://new-example.com',
-      };
-      const userId = 1;
-
-      const mockUser: User = {
-        id: userId,
-        email: 'test@example.com',
-        password: 'hashedPassword',
-        shortenedUrls: [],
+  describe('updateClient', () => {
+    it('should update the client details', async () => {
+      const clientId = 'client-id';
+      const updateClientDto: UpdateClientDto = { name: 'Updated Client' };
+      const mockClient: Client = {
+        id: clientId,
+        name: 'John Doe',
+        salary: 1000,
+        companyValue: 10000,
+        createdBy: mockUser,
         createdAt: new Date(),
         updatedAt: new Date(),
         deletedAt: null,
       };
 
-      const mockShortenedUrl: ShortenedUrl = {
-        id: 'uuid',
-        originalUrl: 'https://example.com',
-        shortCode,
-        user: mockUser,
-        clickCount: 0,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        deletedAt: null,
-      };
+      jest.spyOn(clientRepository, 'findOne').mockResolvedValue(mockClient);
+      jest.spyOn(clientRepository, 'save').mockResolvedValue(mockClient);
 
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser);
-      jest
-        .spyOn(shortenedUrlRepository, 'findOne')
-        .mockResolvedValue(mockShortenedUrl);
-      jest
-        .spyOn(shortenedUrlRepository, 'save')
-        .mockResolvedValue(mockShortenedUrl);
-
-      const result = await urlShortenerService.updateShortenedUrl(
-        shortCode,
-        updateShortenedUrlDto,
-        userId,
+      const result = await clientService.updateClient(
+        clientId,
+        updateClientDto,
       );
 
-      expect(result).toEqual(mockShortenedUrl);
-      expect(shortenedUrlRepository.save).toHaveBeenCalledWith(
-        mockShortenedUrl,
-      );
-    });
-
-    it('should throw UnauthorizedException if user is not found', async () => {
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(null);
-
-      await expect(
-        urlShortenerService.updateShortenedUrl(
-          'abc123',
-          { originalUrl: 'https://new-example.com' },
-          1,
-        ),
-      ).rejects.toThrow(UnauthorizedException);
-    });
-
-    it('should throw NotFoundException if URL is not found or unauthorized', async () => {
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue({
-        id: 1,
-        email: 'test@example.com',
-        password: 'hashedPassword',
-        shortenedUrls: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        deletedAt: null,
+      expect(result).toEqual(mockClient);
+      expect(clientRepository.save).toHaveBeenCalledWith({
+        ...mockClient,
+        ...updateClientDto,
       });
-      jest.spyOn(shortenedUrlRepository, 'findOne').mockResolvedValue(null);
+    });
+
+    it('should throw NotFoundException if client is not found', async () => {
+      const updateClientDto: UpdateClientDto = {
+        name: 'Updated Client',
+        salary: 2000,
+        companyValue: 15000,
+      };
+
+      jest.spyOn(clientRepository, 'findOne').mockResolvedValue(null);
 
       await expect(
-        urlShortenerService.updateShortenedUrl(
-          'abc123',
-          { originalUrl: 'https://new-example.com' },
-          1,
-        ),
+        clientService.updateClient('invalid-id', updateClientDto),
       ).rejects.toThrow(NotFoundException);
     });
   });
 
-  describe('deleteShortenedUrl', () => {
-    it('should delete the shortened URL', async () => {
-      const shortCode = 'abc123';
-      const userId = 1;
-
-      const mockUser: User = {
-        id: userId,
-        email: 'test@example.com',
-        password: 'hashedPassword',
-        shortenedUrls: [],
+  describe('deleteClient', () => {
+    it('should delete the client', async () => {
+      const clientId = 'client-id';
+      const mockClient: Client = {
+        id: clientId,
+        name: 'John Doe',
+        salary: 1000,
+        companyValue: 10000,
+        createdBy: mockUser,
         createdAt: new Date(),
         updatedAt: new Date(),
         deletedAt: null,
       };
 
-      const mockShortenedUrl: ShortenedUrl = {
-        id: 'uuid',
-        originalUrl: 'https://example.com',
-        shortCode,
-        user: mockUser,
-        clickCount: 0,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        deletedAt: null,
-      };
-
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser);
-      jest
-        .spyOn(shortenedUrlRepository, 'findOne')
-        .mockResolvedValue(mockShortenedUrl);
+      jest.spyOn(clientRepository, 'findOne').mockResolvedValue(mockClient);
       const softRemoveSpy = jest
-        .spyOn(shortenedUrlRepository, 'softRemove')
-        .mockResolvedValue(mockShortenedUrl);
+        .spyOn(clientRepository, 'softRemove')
+        .mockResolvedValue(mockClient);
 
-      await urlShortenerService.deleteShortenedUrl(shortCode, userId);
+      await clientService.deleteClient(clientId);
 
-      expect(softRemoveSpy).toHaveBeenCalledWith(mockShortenedUrl);
+      expect(softRemoveSpy).toHaveBeenCalledWith(mockClient);
     });
 
-    it('should throw UnauthorizedException if user is not found', async () => {
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(null);
+    it('should throw NotFoundException if client is not found', async () => {
+      jest.spyOn(clientRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(
-        urlShortenerService.deleteShortenedUrl('abc123', 1),
-      ).rejects.toThrow(UnauthorizedException);
-    });
-
-    it('should throw NotFoundException if URL is not found or unauthorized', async () => {
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue({
-        id: 1,
-        email: 'test@example.com',
-        password: 'hashedPassword',
-        shortenedUrls: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        deletedAt: null,
-      });
-      jest.spyOn(shortenedUrlRepository, 'findOne').mockResolvedValue(null);
-
-      await expect(
-        urlShortenerService.deleteShortenedUrl('abc123', 1),
-      ).rejects.toThrow(NotFoundException);
-    });
-  });
-
-  describe('normalizeUrl', () => {
-    it('should add "http://" prefix if no protocol is present', () => {
-      const url = 'example.com';
-      const result = urlShortenerService['normalizeUrl'](url);
-      expect(result).toBe('http://example.com');
-    });
-
-    it('should not modify the URL if it already has a valid protocol', () => {
-      const url = 'https://example.com';
-      const result = urlShortenerService['normalizeUrl'](url);
-      expect(result).toBe('https://example.com');
+      await expect(clientService.deleteClient('invalid-id')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

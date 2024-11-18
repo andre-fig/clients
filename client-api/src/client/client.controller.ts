@@ -23,9 +23,9 @@ import { ClientService } from './client.service';
 import { CreateClientDto } from './dtos/create-client.dto';
 import { UpdateClientDto } from './dtos/update-client.dto';
 import { Client } from './entities/client.entity';
-import { AuthGuard } from 'src/auth/guards/auth.guard';
-import { GetUserId } from 'src/common/decorators/get-user-id.decorator';
-import { LogInterceptor } from 'src/log/interceptors/log.interceptor';
+import { AuthGuard } from '../auth/guards/auth.guard';
+import { GetUserId } from '../common/decorators/get-user-id.decorator';
+import { LogInterceptor } from '../log/interceptors/log.interceptor';
 
 @ApiBearerAuth()
 @ApiTags('Client')

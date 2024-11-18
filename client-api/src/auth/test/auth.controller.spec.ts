@@ -1,10 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from '../auth.controller';
 import { AuthService } from '../auth.service';
-import { CreateUserDto } from '../dtos/create-user.dto';
 import { LoginUserDto } from '../dtos/login-user.dto';
-import { User } from '../entities/user.entity';
-import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { UnauthorizedException } from '@nestjs/common';
 
 describe('AuthController', () => {
   let authController: AuthController;
@@ -17,7 +15,6 @@ describe('AuthController', () => {
         {
           provide: AuthService,
           useValue: {
-            registerUser: jest.fn(),
             authenticateUser: jest.fn(),
           },
         },
@@ -28,51 +25,10 @@ describe('AuthController', () => {
     authService = module.get<AuthService>(AuthService);
   });
 
-  describe('signup', () => {
-    it('should register a new user', async () => {
-      const createUserDto: CreateUserDto = {
-        email: 'test@example.com',
-        password: 'password123',
-      };
-
-      const user: User = {
-        id: 1,
-        email: createUserDto.email,
-        password: 'hashedPassword',
-      } as User;
-
-      jest.spyOn(authService, 'registerUser').mockResolvedValue(user);
-
-      const result = await authController.signup(createUserDto);
-
-      expect(result).toEqual(user);
-      expect(authService.registerUser).toHaveBeenCalledWith(
-        createUserDto.email,
-        createUserDto.password,
-      );
-    });
-
-    it('should throw a ConflictException if the email is already in use', async () => {
-      const createUserDto: CreateUserDto = {
-        email: 'test@example.com',
-        password: 'password123',
-      };
-
-      jest
-        .spyOn(authService, 'registerUser')
-        .mockRejectedValue(new ConflictException());
-
-      await expect(authController.signup(createUserDto)).rejects.toThrow(
-        ConflictException,
-      );
-    });
-  });
-
   describe('login', () => {
     it('should authenticate a user and return an access token', async () => {
       const loginUserDto: LoginUserDto = {
-        email: 'test@example.com',
-        password: 'password123',
+        name: 'testUser',
       };
 
       const accessToken = { access_token: 'signedToken' };
@@ -85,15 +41,13 @@ describe('AuthController', () => {
 
       expect(result).toEqual(accessToken);
       expect(authService.authenticateUser).toHaveBeenCalledWith(
-        loginUserDto.email,
-        loginUserDto.password,
+        loginUserDto.name,
       );
     });
 
     it('should throw an UnauthorizedException if credentials are invalid', async () => {
       const loginUserDto: LoginUserDto = {
-        email: 'test@example.com',
-        password: 'wrongPassword',
+        name: 'invalidUser',
       };
 
       jest

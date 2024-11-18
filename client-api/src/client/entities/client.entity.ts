@@ -8,7 +8,7 @@ import {
   ManyToOne,
 } from 'typeorm';
 import { Exclude } from 'class-transformer';
-import { User } from 'src/auth/entities/user.entity';
+import { User } from '../../auth/entities/user.entity';
 
 @Entity('clients')
 export class Client {

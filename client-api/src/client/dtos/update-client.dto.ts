@@ -11,11 +11,11 @@ export class UpdateClientDto {
     description: 'The salary of the client',
     example: 1000,
   })
-  salary: number;
+  salary?: number;
 
   @ApiProperty({
     description: 'The company value of the client',
     example: 10000,
   })
-  companyValue: number;
+  companyValue?: number;
 }
