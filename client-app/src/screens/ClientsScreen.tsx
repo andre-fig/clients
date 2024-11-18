@@ -65,11 +65,17 @@ export const ClientsScreen = () => {
       [
         {
           text: 'Excluir cliente',
-          onPress: () => {
-            setClients((prevClients) =>
-              prevClients.filter((client) => client.id !== id)
-            );
-            alert(`Cliente ${name} excluído com sucesso.`);
+          onPress: async () => {
+            try {
+              await api.delete(`/client/${id}`); 
+              setClients((prevClients) =>
+                prevClients.filter((client) => client.id !== id)
+              );
+              Alert.alert('Sucesso', `Cliente ${name} excluído com sucesso.`);
+            } catch (error) {
+              console.error('Erro ao excluir cliente:', error);
+              Alert.alert('Erro', 'Não foi possível excluir o cliente.');
+            }
           },
           style: 'destructive',
         },
@@ -80,6 +86,7 @@ export const ClientsScreen = () => {
       ]
     );
   };
+  
 
   const handleCreateClient = () => {
     if (!newClient.name || !newClient.salary || !newClient.companyValue) {
