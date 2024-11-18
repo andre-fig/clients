@@ -31,19 +31,20 @@ export const ClientsScreen = () => {
     companyValue: '',
   });
 
-  useEffect(() => {
-    const fetchClients = async () => {
-      try {
-        const response = await api.get('/client');
-        setClients(response.data.clients);
-      } catch (error) {
-        console.error('Erro ao buscar clientes:', error);
-        Alert.alert('Erro', 'Não foi possível carregar os clientes.');
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchClients = async () => {
+    try {
+      setLoading(true); 
+      const response = await api.get('/client');
+      setClients(response.data.clients);
+    } catch (error) {
+      console.error('Erro ao buscar clientes:', error);
+      Alert.alert('Erro', 'Não foi possível carregar os clientes.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchClients();
   }, []);
 
@@ -58,6 +59,7 @@ export const ClientsScreen = () => {
   };
 
   const handleEdit = (id: string) => alert(`Editar cliente ${id}`);
+
   const handleDelete = (id: string, name: string) => {
     Alert.alert(
       `Excluir cliente:`,
@@ -86,30 +88,39 @@ export const ClientsScreen = () => {
       ]
     );
   };
-  
 
-  const handleCreateClient = () => {
+  const parseCurrencyToNumber = (value: string): number => {
+    return parseFloat(value.replace(/[^0-9,-]+/g, '').replace(',', '.'));
+  };
+
+  const handleCreateClient = async () => {
     if (!newClient.name || !newClient.salary || !newClient.companyValue) {
       Alert.alert('Erro', 'Por favor, preencha todos os campos.');
       return;
     }
-    setClients((prevClients) => [
-      ...prevClients,
-      {
-        id: Math.random().toString(),
+  
+    try {
+      const salary = parseCurrencyToNumber(newClient.salary);
+      const companyValue = parseCurrencyToNumber(newClient.companyValue);
+  
+      await api.post('/client', {
         name: newClient.name,
-        salary: parseFloat(
-          newClient.salary.replace(/\./g, '').replace(',', '.')
-        ),
-        companyValue: parseFloat(
-          newClient.companyValue.replace(/\./g, '').replace(',', '.')
-        ),
-      },
-    ]);
-    setNewClient({ name: '', salary: '', companyValue: '' });
-    setModalVisible(false);
-    Alert.alert('Sucesso', 'Cliente criado com sucesso!');
+        salary,
+        companyValue,
+      });
+  
+      await fetchClients();
+  
+      setNewClient({ name: '', salary: '', companyValue: '' });
+      setModalVisible(false);
+  
+      Alert.alert('Sucesso', 'Cliente criado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao criar cliente:', error);
+      Alert.alert('Erro', 'Não foi possível criar o cliente.');
+    }
   };
+  
 
   const formatCurrency = (value: number): string => {
     return new Intl.NumberFormat('pt-BR', {
