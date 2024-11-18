@@ -35,8 +35,8 @@ export const ClientsScreen = () => {
     salary: '',
     companyValue: '',
   });
-  const [clientsPerPage, setClientsPerPage] = useState(3); 
-  const { selectedClients, setSelectedClients } = useSelectedClients(); 
+  const [clientsPerPage, setClientsPerPage] = useState(3);
+  const { selectedClients, setSelectedClients } = useSelectedClients();
   const navigation = useNavigation<NavigationProps>();
   const [items, setItems] = useState([
     { label: '3', value: 3 },
@@ -48,12 +48,13 @@ export const ClientsScreen = () => {
   const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalClients, setTotalClients] = useState(0);
 
   const handleNavigateToSelected = () => {
     const filteredClients = clients.filter((client) =>
-      selectedClients.includes(client.id)
+      selectedClients.includes(client.id),
     );
-  
+
     navigation.navigate('SelectedClients', {
       selectedClients,
       clients: filteredClients,
@@ -71,6 +72,7 @@ export const ClientsScreen = () => {
       });
       setClients(response.data.clients);
       setTotalPages(Math.ceil(response.data.total / clientsPerPage));
+      setTotalClients(response.data.total);
     } catch (error) {
       console.error('Erro ao buscar clientes:', error);
       Alert.alert('Erro', 'Não foi possível carregar os clientes.');
@@ -85,44 +87,45 @@ export const ClientsScreen = () => {
 
   const generatePagination = (): (number | string)[] => {
     const pages: (number | string)[] = [];
-  
+
     if (totalPages <= 1) return [1];
-  
+
     if (totalPages <= 3) {
       for (let i = 1; i <= totalPages; i++) pages.push(i);
     } else {
       if (currentPage > 2) {
         pages.push(1);
-        if (currentPage > 3) pages.push('...'); 
+        if (currentPage > 3) pages.push('...');
       }
-  
+
       if (currentPage > 1) pages.push(currentPage - 1);
-  
+
       pages.push(currentPage);
-  
+
       if (currentPage < totalPages) pages.push(currentPage + 1);
-  
+
       if (currentPage < totalPages - 2) {
         pages.push('...');
       }
-  
+
       if (currentPage < totalPages - 1) {
         pages.push(totalPages);
       }
     }
-  
+
     return pages;
   };
-  
 
   const handlePageChange = (page: number | string) => {
     if (page === '...') return;
-    setCurrentPage(page as number); 
+    setCurrentPage(page as number);
   };
 
   const handleSelect = (id: string) => {
     setSelectedClients((prev) =>
-      prev.includes(id) ? prev.filter((clientId) => clientId !== id) : [...prev, id]
+      prev.includes(id)
+        ? prev.filter((clientId) => clientId !== id)
+        : [...prev, id],
     );
   };
 
@@ -137,10 +140,22 @@ export const ClientsScreen = () => {
           text: 'Excluir cliente',
           onPress: async () => {
             try {
-              await api.delete(`/client/${id}`); 
-              setClients((prevClients) =>
-                prevClients.filter((client) => client.id !== id)
+              await api.delete(`/client/${id}`);
+
+              // Atualiza o total manualmente
+              const updatedTotalClients = totalClients - 1;
+              setTotalClients(updatedTotalClients);
+
+              const newTotalPages = Math.ceil(
+                updatedTotalClients / clientsPerPage,
               );
+
+              if (currentPage > newTotalPages) {
+                setCurrentPage(newTotalPages);
+              } else {
+                await fetchClients(currentPage);
+              }
+
               Alert.alert('Sucesso', `Cliente ${name} excluído com sucesso.`);
             } catch (error) {
               console.error('Erro ao excluir cliente:', error);
@@ -153,7 +168,7 @@ export const ClientsScreen = () => {
           text: 'Cancelar',
           style: 'cancel',
         },
-      ]
+      ],
     );
   };
 
@@ -166,29 +181,28 @@ export const ClientsScreen = () => {
       Alert.alert('Erro', 'Por favor, preencha todos os campos.');
       return;
     }
-  
+
     try {
       const salary = parseCurrencyToNumber(newClient.salary);
       const companyValue = parseCurrencyToNumber(newClient.companyValue);
-  
+
       await api.post('/client', {
         name: newClient.name,
         salary,
         companyValue,
       });
-  
+
       await fetchClients();
-  
+
       setNewClient({ name: '', salary: '', companyValue: '' });
       setModalVisible(false);
-  
+
       Alert.alert('Sucesso', 'Cliente criado com sucesso!');
     } catch (error) {
       console.error('Erro ao criar cliente:', error);
       Alert.alert('Erro', 'Não foi possível criar o cliente.');
     }
   };
-  
 
   const formatCurrency = (value: number): string => {
     return new Intl.NumberFormat('pt-BR', {
@@ -223,175 +237,169 @@ export const ClientsScreen = () => {
   }
 
   return (
-    <View style={styles.selection}>  
+    <View style={styles.selection}>
       <Text>
-        <Text style={styles.boldText}>{clients.length}</Text> clientes
+        <Text style={styles.boldText}>{totalClients}</Text> clientes
         encontrados:
       </Text>
-      <View style={styles.clientsPerPage}>  
-      <Text>Clientes por página:</Text>
-     
+      <View style={styles.clientsPerPage}>
+        <Text>Clientes por página:</Text>
 
-      <DropDownPicker
-        open={open}
-        value={clientsPerPage}
-        items={items}
-        setOpen={setOpen}
-        setValue={setClientsPerPage}
-        setItems={setItems}
-        style={styles.dropdown}
-        containerStyle={{
-          width: 75,
-          height: 40,
-        }}
-        textStyle={{
-          fontSize: 12,
-        }}
-      />
-       </View>
-
-
-      <ScrollView contentContainerStyle={styles.container}>
-      {clients.map((item) => (
-        <View key={item.id} style={styles.card}>
-          <Text style={styles.clientName}>{item.name}</Text>
-          <Text style={styles.textDetail}>
-            Salário: {formatCurrency(item.salary)}
-          </Text>
-          <Text style={styles.textDetail}>
-            Empresa: {formatCurrency(item.companyValue)}
-          </Text>
-          <View
-            style={styles.cardActions}
-          >
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => handleSelect(item.id)}
-            >
-              <Image
-                source={
-                  selectedClients.includes(item.id)
-                    ? require('../../assets/unselect-icon.png')
-                    : require('../../assets/plus-icon.png')
-                }
-                style={styles.actionIcon}
-              />
-            </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => handleEdit(item.id)}
-                >
-                  <Image
-                    source={require('../../assets/pencil-icon.png')}
-                    style={styles.actionIcon}
-                  />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => handleDelete(item.id, item.name)}
-                >
-                  <Image
-                    source={require('../../assets/trash-icon.png')}
-                    style={styles.actionIcon}
-                  />
-                </TouchableOpacity>
-          </View>
-        </View>
-      ))}
-      <TouchableOpacity
-        style={styles.createButton}
-        onPress={
-      () => setModalVisible(true)
-        }
-      >
-        <Text style={styles.createButtonText}>
-          Criar cliente
-        </Text>
-      </TouchableOpacity>
-
-      {selectedClients.length > 0 && (
-        <TouchableOpacity
-          style={styles.selectedButton}
-          onPress={handleNavigateToSelected}
-        >
-          <Text style={styles.selectedButtonText}>
-            Ver clientes selecionados
-          </Text>
-        </TouchableOpacity>
-      )}
-
-      <View style={styles.paginationContainer}>
-        {generatePagination().map((page, index) => {
-          return (
-            <TouchableOpacity
-              key={index}
-              onPress={() => handlePageChange(page)}
-              style={[
-                styles.pageButton,
-                page === currentPage && styles.activePageButton,
-              ]}
-            >
-              <Text
-                style={[
-                  page === currentPage ? styles.activePageText : styles.inactivePageText,
-                ]}
-              >
-                {page}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
+        <DropDownPicker
+          open={open}
+          value={clientsPerPage}
+          items={items}
+          setOpen={setOpen}
+          setValue={setClientsPerPage}
+          setItems={setItems}
+          style={styles.dropdown}
+          containerStyle={{
+            width: 75,
+            height: 40,
+          }}
+          textStyle={{
+            fontSize: 12,
+          }}
+        />
       </View>
 
+      <ScrollView contentContainerStyle={styles.container}>
+        {clients.map((item) => (
+          <View key={item.id} style={styles.card}>
+            <Text style={styles.clientName}>{item.name}</Text>
+            <Text style={styles.textDetail}>
+              Salário: {formatCurrency(item.salary)}
+            </Text>
+            <Text style={styles.textDetail}>
+              Empresa: {formatCurrency(item.companyValue)}
+            </Text>
+            <View style={styles.cardActions}>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => handleSelect(item.id)}
+              >
+                <Image
+                  source={
+                    selectedClients.includes(item.id)
+                      ? require('../../assets/unselect-icon.png')
+                      : require('../../assets/plus-icon.png')
+                  }
+                  style={styles.actionIcon}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => handleEdit(item.id)}
+              >
+                <Image
+                  source={require('../../assets/pencil-icon.png')}
+                  style={styles.actionIcon}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => handleDelete(item.id, item.name)}
+              >
+                <Image
+                  source={require('../../assets/trash-icon.png')}
+                  style={styles.actionIcon}
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+        ))}
+        <TouchableOpacity
+          style={styles.createButton}
+          onPress={() => setModalVisible(true)}
+        >
+          <Text style={styles.createButtonText}>Criar cliente</Text>
+        </TouchableOpacity>
 
-      <Modal
-        isVisible={modalVisible}
-        onBackdropPress={() => setModalVisible(false)}
-        onBackButtonPress={() => setModalVisible(false)}
-        animationIn="slideInUp"
-        animationOut="slideOutDown"
-        backdropOpacity={0.75}
-        style={styles.modal}
-      >
-        <View style={styles.modalContent}>
-          <View style={styles.dragIndicator} />
-          <Text style={styles.modalTitle}>Criar Cliente</Text>
-          <Text style={styles.modalLabel}>Nome</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Digite o nome:"
-            placeholderTextColor="#dbdbdb"
-            value={newClient.name}
-            onChangeText={(text) => setNewClient({ ...newClient, name: text })}
-          />
-          <Text style={styles.modalLabel}>Salário</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Digite o salário:"
-            placeholderTextColor="#dbdbdb"
-            keyboardType="numeric"
-            value={newClient.salary}
-            onChangeText={handleSalaryChange}
-          />
-          <Text style={styles.modalLabel}>Valor da empresa</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Digite o valor da empresa:"
-            placeholderTextColor="#dbdbdb"
-            keyboardType="numeric"
-            value={newClient.companyValue}
-            onChangeText={handleCompanyValueChange}
-          />
+        {selectedClients.length > 0 && (
           <TouchableOpacity
-            style={styles.modalButton}
-            onPress={handleCreateClient}
+            style={styles.selectedButton}
+            onPress={handleNavigateToSelected}
           >
-            <Text style={styles.modalButtonText}>Criar cliente</Text>
+            <Text style={styles.selectedButtonText}>
+              Ver clientes selecionados
+            </Text>
           </TouchableOpacity>
-        </View>
-      </Modal>
-    </ScrollView>
+        )}
 
+        <View style={styles.paginationContainer}>
+          {generatePagination().map((page, index) => {
+            return (
+              <TouchableOpacity
+                key={index}
+                onPress={() => handlePageChange(page)}
+                style={[
+                  styles.pageButton,
+                  page === currentPage && styles.activePageButton,
+                ]}
+              >
+                <Text
+                  style={[
+                    page === currentPage
+                      ? styles.activePageText
+                      : styles.inactivePageText,
+                  ]}
+                >
+                  {page}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        <Modal
+          isVisible={modalVisible}
+          onBackdropPress={() => setModalVisible(false)}
+          onBackButtonPress={() => setModalVisible(false)}
+          animationIn="slideInUp"
+          animationOut="slideOutDown"
+          backdropOpacity={0.75}
+          style={styles.modal}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.dragIndicator} />
+            <Text style={styles.modalTitle}>Criar Cliente</Text>
+            <Text style={styles.modalLabel}>Nome</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Digite o nome:"
+              placeholderTextColor="#dbdbdb"
+              value={newClient.name}
+              onChangeText={(text) =>
+                setNewClient({ ...newClient, name: text })
+              }
+            />
+            <Text style={styles.modalLabel}>Salário</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Digite o salário:"
+              placeholderTextColor="#dbdbdb"
+              keyboardType="numeric"
+              value={newClient.salary}
+              onChangeText={handleSalaryChange}
+            />
+            <Text style={styles.modalLabel}>Valor da empresa</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Digite o valor da empresa:"
+              placeholderTextColor="#dbdbdb"
+              keyboardType="numeric"
+              value={newClient.companyValue}
+              onChangeText={handleCompanyValueChange}
+            />
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={handleCreateClient}
+            >
+              <Text style={styles.modalButtonText}>Criar cliente</Text>
+            </TouchableOpacity>
+          </View>
+        </Modal>
+      </ScrollView>
     </View>
   );
 };
@@ -405,18 +413,18 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   clientsPerPage: {
-    flexDirection: 'row', 
-    justifyContent: 'center', 
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
     width: '100%',
     gap: 20,
-  },  
+  },
   dropdown: {
     marginTop: 5,
     borderColor: '#ccc',
     width: 67,
     backgroundColor: '#f9f9f9',
-    minHeight: 30, 
+    minHeight: 30,
   },
   container: {
     flexGrow: 1,
@@ -580,7 +588,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#fff',
   },
-  pageSelection: { flex: 1, padding: 10 },
   paginationContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -591,17 +598,16 @@ const styles = StyleSheet.create({
     padding: 10,
     marginHorizontal: 5,
     borderRadius: 5,
-
   },
   activePageButton: {
     width: 35,
     height: 35,
     backgroundColor: '#EC6724',
   },
-  inactivePageText: { 
+  inactivePageText: {
     textAlign: 'center',
     fontWeight: '700',
-    color: '#000'
+    color: '#000',
   },
   activePageText: {
     fontSize: 14,
