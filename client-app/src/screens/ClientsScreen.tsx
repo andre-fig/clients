@@ -35,16 +35,19 @@ export const ClientsScreen = () => {
     salary: '',
     companyValue: '',
   });
-  const [clientsPerPage, setClientsPerPage] = useState(10); 
+  const [clientsPerPage, setClientsPerPage] = useState(3); 
   const { selectedClients, setSelectedClients } = useSelectedClients(); 
   const navigation = useNavigation<NavigationProps>();
   const [items, setItems] = useState([
+    { label: '3', value: 3 },
     { label: '5', value: 5 },
     { label: '10', value: 10 },
     { label: '15', value: 15 },
     { label: '20', value: 20 },
   ]);
   const [open, setOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   const handleNavigateToSelected = () => {
     const filteredClients = clients.filter((client) =>
@@ -57,15 +60,17 @@ export const ClientsScreen = () => {
     });
   };
 
-  const fetchClients = async () => {
+  const fetchClients = async (page = 1) => {
     try {
       setLoading(true);
       const response = await api.get('/client', {
         params: {
-          limit: clientsPerPage, 
+          limit: clientsPerPage,
+          page,
         },
       });
       setClients(response.data.clients);
+      setTotalPages(Math.ceil(response.data.total / clientsPerPage));
     } catch (error) {
       console.error('Erro ao buscar clientes:', error);
       Alert.alert('Erro', 'Não foi possível carregar os clientes.');
@@ -75,8 +80,45 @@ export const ClientsScreen = () => {
   };
 
   useEffect(() => {
-    fetchClients();
-  }, [clientsPerPage]); 
+    fetchClients(currentPage);
+  }, [clientsPerPage, currentPage]);
+
+  const generatePagination = (): (number | string)[] => {
+    const pages: (number | string)[] = [];
+  
+    if (totalPages <= 1) return [1];
+  
+    if (totalPages <= 3) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      if (currentPage > 2) {
+        pages.push(1);
+        if (currentPage > 3) pages.push('...'); 
+      }
+  
+      if (currentPage > 1) pages.push(currentPage - 1);
+  
+      pages.push(currentPage);
+  
+      if (currentPage < totalPages) pages.push(currentPage + 1);
+  
+      if (currentPage < totalPages - 2) {
+        pages.push('...');
+      }
+  
+      if (currentPage < totalPages - 1) {
+        pages.push(totalPages);
+      }
+    }
+  
+    return pages;
+  };
+  
+
+  const handlePageChange = (page: number | string) => {
+    if (page === '...') return;
+    setCurrentPage(page as number); 
+  };
 
   const handleSelect = (id: string) => {
     setSelectedClients((prev) =>
@@ -278,6 +320,30 @@ export const ClientsScreen = () => {
         </TouchableOpacity>
       )}
 
+      <View style={styles.paginationContainer}>
+        {generatePagination().map((page, index) => {
+          return (
+            <TouchableOpacity
+              key={index}
+              onPress={() => handlePageChange(page)}
+              style={[
+                styles.pageButton,
+                page === currentPage && styles.activePageButton,
+              ]}
+            >
+              <Text
+                style={[
+                  page === currentPage ? styles.activePageText : styles.inactivePageText,
+                ]}
+              >
+                {page}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+
       <Modal
         isVisible={modalVisible}
         onBackdropPress={() => setModalVisible(false)}
@@ -325,6 +391,7 @@ export const ClientsScreen = () => {
         </View>
       </Modal>
     </ScrollView>
+
     </View>
   );
 };
@@ -333,7 +400,6 @@ const styles = StyleSheet.create({
   selection: {
     justifyContent: 'space-between',
     alignItems: 'center',
-    // gap: 20,
     paddingTop: 20,
     backgroundColor: '#f9f9f9',
     width: '100%',
@@ -514,5 +580,33 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#fff',
   },
+  pageSelection: { flex: 1, padding: 10 },
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: 10,
+  },
+  pageButton: {
+    padding: 10,
+    marginHorizontal: 5,
+    borderRadius: 5,
 
+  },
+  activePageButton: {
+    width: 35,
+    height: 35,
+    backgroundColor: '#EC6724',
+  },
+  inactivePageText: { 
+    textAlign: 'center',
+    fontWeight: '700',
+    color: '#000'
+  },
+  activePageText: {
+    fontSize: 14,
+    textAlign: 'center',
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
 });
