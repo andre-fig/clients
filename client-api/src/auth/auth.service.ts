@@ -24,7 +24,7 @@ export class AuthService {
     const stringUserId = user.id.toString();
     const token = this.jwtService.sign({
       sub: stringUserId,
-      iss: 'auth-service',
+      iss: 'client-api',
     });
 
     return {

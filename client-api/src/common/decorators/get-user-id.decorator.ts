@@ -9,7 +9,7 @@ export const GetUserId = createParamDecorator(
   (
     _data: { allowUndefined?: boolean } = {},
     ctx: ExecutionContext,
-  ): number | undefined => {
+  ): string | undefined => {
     const { allowUndefined } = _data;
     const request = ctx.switchToHttp().getRequest();
     const token = extractTokenFromHeader(request.headers['authorization']);
@@ -40,7 +40,7 @@ function extractTokenFromHeader(
   return bearer === 'Bearer' && token ? token : undefined;
 }
 
-function extractUserIdFromToken(token: string): number | undefined {
+function extractUserIdFromToken(token: string): string | undefined {
   const jwtService = new JwtService();
 
   const decodedToken = jwtService.decode(token) as { sub: string } | null;
@@ -49,7 +49,7 @@ function extractUserIdFromToken(token: string): number | undefined {
     throw new UnauthorizedException('Invalid token');
   }
 
-  const userId = Number(decodedToken.sub);
+  const userId = String(decodedToken.sub);
 
-  return isNaN(userId) ? undefined : userId;
+  return userId;
 }

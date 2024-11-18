@@ -12,8 +12,15 @@ export class ClientService {
     private readonly clientRepository: Repository<Client>,
   ) {}
 
-  public async createClient(createClientDto: CreateClientDto): Promise<Client> {
-    const client = this.clientRepository.create(createClientDto);
+  public async createClient(
+    createClientDto: CreateClientDto,
+    userId: string,
+  ): Promise<Client> {
+    const client = this.clientRepository.create({
+      ...createClientDto,
+      createdBy: { id: userId },
+    });
+
     return await this.clientRepository.save(client);
   }
 

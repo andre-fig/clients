@@ -8,6 +8,8 @@ import {
   Patch,
   Delete,
   NotFoundException,
+  UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -21,23 +23,29 @@ import { ClientService } from './client.service';
 import { CreateClientDto } from './dtos/create-client.dto';
 import { UpdateClientDto } from './dtos/update-client.dto';
 import { Client } from './entities/client.entity';
+import { AuthGuard } from 'src/auth/guards/auth.guard';
+import { GetUserId } from 'src/common/decorators/get-user-id.decorator';
+import { LogInterceptor } from 'src/log/interceptors/log.interceptor';
 
+@ApiBearerAuth()
 @ApiTags('Client')
+@UseInterceptors(LogInterceptor)
+@UseGuards(AuthGuard)
 @Controller('client')
 export class ClientController {
   constructor(private readonly clientService: ClientService) {}
 
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a client' })
   @ApiResponse({
     status: 201,
     description: 'Client created successfully.',
   })
   @Post()
-  public async createClient(
+  public async create(
+    @GetUserId() userId: string,
     @Body() createClientDto: CreateClientDto,
   ): Promise<Client> {
-    return await this.clientService.createClient(createClientDto);
+    return await this.clientService.createClient(createClientDto, userId);
   }
 
   @ApiOperation({ summary: 'Get a client by ID' })
@@ -49,7 +57,7 @@ export class ClientController {
   })
   @ApiResponse({ status: 404, description: 'Client not found.' })
   @Get(':id')
-  public async getClientById(@Param('id') id: string): Promise<Client> {
+  public async getById(@Param('id') id: string): Promise<Client> {
     const client = await this.clientService.getClientById(id);
     if (!client) {
       throw new NotFoundException('Client not found');
@@ -75,14 +83,13 @@ export class ClientController {
     description: 'Clients retrieved successfully.',
   })
   @Get()
-  public async getAllClients(
+  public async getAll(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
   ): Promise<{ total: number; clients: Client[] }> {
     return await this.clientService.getAllClients(page, limit);
   }
 
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Update a client' })
   @ApiParam({
     name: 'id',
@@ -95,14 +102,13 @@ export class ClientController {
   })
   @ApiResponse({ status: 404, description: 'Client not found.' })
   @Patch(':id')
-  public async updateClient(
+  public async update(
     @Param('id') id: string,
     @Body() updateClientDto: UpdateClientDto,
   ): Promise<Client> {
     return await this.clientService.updateClient(id, updateClientDto);
   }
 
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete a client' })
   @ApiParam({
     name: 'id',
@@ -115,7 +121,7 @@ export class ClientController {
   })
   @ApiResponse({ status: 404, description: 'Client not found.' })
   @Delete(':id')
-  public async deleteClient(@Param('id') id: string): Promise<void> {
+  public async delete(@Param('id') id: string): Promise<void> {
     return await this.clientService.deleteClient(id);
   }
 }

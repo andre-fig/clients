@@ -2,14 +2,13 @@
 FROM node:20 AS development
 WORKDIR /app
 
-# Copiar o yarn.lock da raiz do monorepo e o package.json específico do serviço
-COPY ./client-api/yarn.lock ./
-COPY ./client-api/package.json ./
+# Copiar apenas os arquivos necessários para instalar dependências
+COPY ./client-api/package.json ./client-api/yarn.lock ./
 
-# Instalar dependências de desenvolvimento
-RUN yarn install --frozen-lockfile
+# Forçar a instalação limpa para evitar problemas de dependências
+RUN yarn install --check-files
 
-# Copiar o restante do código do serviço para o contêiner
+# Copiar o restante do código para o contêiner
 COPY ./client-api ./
 
 # Expor a porta
@@ -17,4 +16,3 @@ EXPOSE 3000
 
 # Comando para iniciar a aplicação em modo de desenvolvimento
 CMD ["sh", "-c", "yarn migration:run && yarn start:dev"]
-

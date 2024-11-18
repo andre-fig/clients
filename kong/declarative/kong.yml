@@ -5,24 +5,18 @@ consumers:
 
 jwt_secrets:
   - consumer: login_server_issuer
-    key: 'auth-service'
-    secret: 'your_jwt_secret'
+    key: 'client-api'
+    secret: 'yourjwtsecret'
 
 services:
   - name: client-api
-    url: http://auth-service:3000
+    url: http://client-api:3000
     routes:
       - name: hello-world
         paths:
           - /
         methods:
           - GET
-        strip_path: false
-      - name: auth-signup
-        paths:
-          - /auth/signup
-        methods:
-          - POST
         strip_path: false
       - name: auth-login
         paths:
@@ -32,49 +26,24 @@ services:
         strip_path: false
       - name: swagger
         paths:
-          - /auth-service
+          - /admin/docs
         methods:
           - GET
         strip_path: false
-
-  - name: url-shortener
-    url: http://url-shortener:3000
-    routes:
-      - name: swagger
+      - name: bull-board
         paths:
-          - /url-shortener
+          - /admin/queues
         methods:
           - GET
         strip_path: false
-      - name: create-shortened-url
+      - name: client
         paths:
-          - /shortened-url
+          - /client
         methods:
+          - GET
           - POST
-        strip_path: false
-      - name: list-shortened-url
-        paths:
-          - /shortened-url/all
-        methods:
-          - GET
-        strip_path: false
-        plugins:
-          - name: jwt
-            config:
-              claims_to_verify:
-                - exp
-              secret_is_base64: false
-      - name: redirect-shortened-url
-        paths:
-          - /shortened-url/r
-        methods:
-          - GET
-        strip_path: false
-      - name: update-shortened-url
-        paths:
-          - /shortened-url
-        methods:
           - PATCH
+          - DELETE
         strip_path: false
         plugins:
           - name: jwt
@@ -82,11 +51,11 @@ services:
               claims_to_verify:
                 - exp
               secret_is_base64: false
-      - name: delete-shortened-url
+      - name: log
         paths:
-          - /shortened-url
+          - /log
         methods:
-          - DELETE
+          - GET
         strip_path: false
         plugins:
           - name: jwt

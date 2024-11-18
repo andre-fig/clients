@@ -5,6 +5,9 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ClientModule } from './client/client.module';
 import { AuthModule } from './auth/auth.module';
+import { LogModule } from './log/log.module';
+import { BullModule } from '@nestjs/bullmq';
+import { BullBoardService } from './config/bull-board.service';
 
 @Module({
   imports: [
@@ -22,10 +25,18 @@ import { AuthModule } from './auth/auth.module';
       synchronize: false,
       logging: true,
     }),
+    BullModule.forRoot({
+      connection: {
+        host: process.env.REDIS_HOST,
+        port: parseInt(process.env.REDIS_PORT, 10),
+        password: process.env.REDIS_PASSWORD,
+      },
+    }),
     ClientModule,
     AuthModule,
+    LogModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, BullBoardService],
 })
 export class AppModule {}

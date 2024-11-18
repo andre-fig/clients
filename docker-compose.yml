@@ -12,6 +12,14 @@ services:
     networks:
       - app-network
 
+  redis:
+    image: redis:6.2
+    command: redis-server --requirepass yourpassword
+    ports:
+      - '6379:6379'
+    networks:
+      - app-network
+
   client-api:
     build:
       context: .
@@ -28,8 +36,12 @@ services:
       DATABASE_PASSWORD: yourpassword
       DATABASE_NAME: yourdatabase
       BASE_URL: http://localhost:8000/
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: yourpassword
     depends_on:
       - postgres
+      - redis
     networks:
       - app-network
 
