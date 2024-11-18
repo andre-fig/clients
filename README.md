@@ -3,12 +3,13 @@
 ## Sumário
 
 1. [Questionamento](#questionamento-acerca-do-desenvolvimento-do-painel-administrativo)
-2. [Descrição](#descrição)
-3. [Funcionalidades](#funcionalidades)
-4. [Pré-requisitos](#pré-requisitos)
-5. [Usando a Aplicação](#usando-a-aplicação)
-6. [Testes](#testes)
-7. [Pontos de Melhoria](#pontos-de-melhoria)
+2. [Estrutura Sugerida]
+3. [Descrição](#descrição)
+4. [Funcionalidades](#funcionalidades)
+5. [Pré-requisitos](#pré-requisitos)
+6. [Usando a Aplicação](#usando-a-aplicação)
+7. [Testes](#testes)
+8. [Pontos de Melhoria](#pontos-de-melhoria)
    - [Escalabilidade Horizontal](#escalabilidade-horizontal)
    - [Migração para OAuth](#migração-para-oauth)
 
@@ -16,7 +17,7 @@
 
 ### 1. Quanto tempo levaria?
 
-Estima-se que o desenvolvimento do painel administrativo levaria cerca de 50 horas, conforme detalhamento das tarefas a seguir. Esse prazo pode ser concluído em aproximadamente 7 dias úteis com 1 desenvolvedor ou em 4 dias úteis com uma equipe de 2 desenvolvedores, devido à divisão de tarefas.
+Estima-se que o desenvolvimento de um painel administrativo para a aplicação levaria cerca de 50 horas, conforme detalhamento das tarefas a seguir. Esse prazo pode ser concluído em aproximadamente 7 dias úteis com 1 desenvolvedor ou em 4 dias úteis com uma equipe de 2 desenvolvedores, devido à divisão de tarefas.
 
 - Configuração inicial: 5 horas.
 
@@ -73,11 +74,70 @@ Recomenda-se uma equipe composta por um ou dois desenvolvedores, dependendo do p
   - 1 Desenvolvedor Backend (Pleno ou Sênior):
   - 1 Desenvolvedor Frontend (Pleno);
 
+## Arquitetura sugerida para o Client App
+
+### 1. Mobile App (Frontend)
+
+- **Tecnologia:** React Native + Expo
+- **Função:**
+  - Prover a interface do usuário para interação com o sistema.
+  - Enviar requisições e dados ao backend através de APIs REST.
+  - Receber e apresentar informações processadas do backend.
+
+### 2. API Gateway
+
+- **Tecnologia:** Kong
+- **Infraestrutura:** Hospedado em AWS EC2 ou Containerizado (Docker)
+- **Função:**
+  - Centralizar e gerenciar requisições de entrada.
+  - Prover funcionalidades como:
+    - **Autenticação e Autorização:** Controle de acesso usando plugins de segurança (JWT, OAuth2).
+    - **Rate Limiting:** Controle de número de requisições para proteger o backend.
+    - **Roteamento:** Direcionamento de requisições para os serviços backend apropriados.
+    - **Observabilidade:** Registro e monitoramento das requisições.
+
+### 3. Backend
+
+- **Tecnologia:** Nest.js + TypeORM
+- **Função:**
+  - Implementar a lógica de negócio e gerenciar as interações com bancos de dados e serviços externos.
+  - Garantir consistência e validação de dados.
+  - Expor APIs RESTful para o frontend.
+
+### 4. Banco de Dados (Persistência de Dados)
+
+- **Tecnologia:** PostgreSQL
+- **Infraestrutura:** AWS RDS
+- **Função:**
+  - Armazenar dados estruturados e persistentes, como informações de clientes, registros financeiros, etc.
+  - Prover suporte a consultas eficientes e consistentes.
+
+### 5. Armazenamento de Arquivos
+
+- **Tecnologia:** AWS S3
+- **Função:**
+  - Armazenar arquivos e objetos de forma segura e escalável.
+  - Gerenciar documentos ou mídias enviados pelo sistema.
+
+### 6. Filas de Processamento e Cache
+
+- **Tecnologia:** Redis com BullMQ
+- **Função:**
+  - Implementar filas para processamento assíncrono de tarefas (e.g., envio de e-mails, cálculos pesados).
+  - Utilizar cache para otimizar consultas frequentes e reduzir a carga no banco de dados.
+
+### 7. Monitoramento e Logs
+
+- **Tecnologia:** AWS CloudWatch
+- **Função:**
+  - Monitorar métricas de performance e logs do sistema.
+  - Identificar problemas, como alta latência ou falhas, e enviar alertas proativos.
+
 ## Descrição
 
 Este projeto permite gerenciar clientes. O sistema oferece funcionalidades para cadastro de clientes, visualização de uma lista de todos os clientes cadastrados, edição das informações de clientes, e exclusão de registros.
 
-O backend foi desenvolvido como uma API RESTful utilizando Node.js com o framework NestJS, garantindo robustez e escalabilidade. O sistema está integrado a um banco de dados para armazenamento seguro das informações. A interface do usuário foi desenvolvida com React Native utilizando Expo, permitindo a execução do aplicativo em dispositivos móveis de forma moderna e responsiva.
+A aplicação utiliza o Kong como API Gateway e o backend foi desenvolvido como uma API RESTful utilizando Node.js com o framework NestJS, garantindo robustez e escalabilidade. O sistema está integrado a um banco de dados para armazenamento seguro das informações. A interface do usuário foi desenvolvida com React Native utilizando Expo, permitindo a execução do aplicativo em dispositivos móveis de forma moderna e responsiva.
 
 ## Funcionalidades
 
