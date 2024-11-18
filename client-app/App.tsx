@@ -8,13 +8,19 @@ import { Header } from './src/components/Header';
 import Menu from './src/components/Menu';
 import { NotFoundScreen } from './src/screens/NotFoundScreen';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
+import { SelectedClientsProvider } from './src/contexts/SelectedClientsContext'; // Novo provider
 import { navigationRef } from './src/navigation/NavigationService';
 import api from './src/api/api'; 
+import { Client, SelectedClientsScreen } from './src/screens/SelectedClientsScreen';
 
-type RootStackParamList = {
+export type RootStackParamList = {
   Login: undefined;
   Clients: undefined;
   NotFound: undefined;
+  SelectedClients: {
+    selectedClients: string[];
+    clients: Client[];
+  };
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -68,6 +74,11 @@ function AppContent() {
             options={{ headerShown: false }}
           />
           <Stack.Screen name="Clients" component={ClientsScreen} />
+          <Stack.Screen
+            name="SelectedClients"
+            component={SelectedClientsScreen}
+            options={{ title: 'Clientes Selecionados' }} 
+          />
           <Stack.Screen name="NotFound" component={NotFoundScreen} />
         </Stack.Navigator>
         <Menu
@@ -83,7 +94,9 @@ function AppContent() {
 export default function App() {
   return (
     <AuthProvider>
-      <AppContent /> 
+      <SelectedClientsProvider> {/* Envolvendo com o SelectedClientsProvider */}
+        <AppContent />
+      </SelectedClientsProvider>
     </AuthProvider>
   );
 }

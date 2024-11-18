@@ -11,6 +11,10 @@ import {
 } from 'react-native';
 import Modal from 'react-native-modal';
 import api from '../api/api';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../../App';
+import { useSelectedClients } from '../contexts/SelectedClientsContext';
 
 interface Client {
   id: string;
@@ -19,10 +23,10 @@ interface Client {
   companyValue: number;
 }
 
+type NavigationProps = StackNavigationProp<RootStackParamList, 'Clients'>;
 
 export const ClientsScreen = () => {
   const [clients, setClients] = useState<Client[]>([]);
-  const [selectedClients, setSelectedClients] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [newClient, setNewClient] = useState({
@@ -30,6 +34,20 @@ export const ClientsScreen = () => {
     salary: '',
     companyValue: '',
   });
+
+  const { selectedClients, setSelectedClients } = useSelectedClients(); 
+  const navigation = useNavigation<NavigationProps>();
+
+  const handleNavigateToSelected = () => {
+    const filteredClients = clients.filter((client) =>
+      selectedClients.includes(client.id)
+    );
+  
+    navigation.navigate('SelectedClients', {
+      selectedClients,
+      clients: filteredClients,
+    });
+  };
 
   const fetchClients = async () => {
     try {
@@ -52,10 +70,6 @@ export const ClientsScreen = () => {
     setSelectedClients((prev) =>
       prev.includes(id) ? prev.filter((clientId) => clientId !== id) : [...prev, id]
     );
-  };
-
-  const handleClearSelection = () => {
-    setSelectedClients([]);
   };
 
   const handleEdit = (id: string) => alert(`Editar cliente ${id}`);
@@ -171,9 +185,7 @@ export const ClientsScreen = () => {
             Empresa: {formatCurrency(item.companyValue)}
           </Text>
           <View
-            style={selectedClients.includes(item.id)
-                ? styles.selectedCardActions
-                : styles.cardActions}
+            style={styles.cardActions}
           >
             <TouchableOpacity
               style={styles.actionButton}
@@ -188,8 +200,6 @@ export const ClientsScreen = () => {
                 style={styles.actionIcon}
               />
             </TouchableOpacity>
-            {!selectedClients.includes(item.id) && (
-              <>
                 <TouchableOpacity
                   style={styles.actionButton}
                   onPress={() => handleEdit(item.id)}
@@ -208,21 +218,30 @@ export const ClientsScreen = () => {
                     style={styles.actionIcon}
                   />
                 </TouchableOpacity>
-              </>
-            )}
           </View>
         </View>
       ))}
       <TouchableOpacity
         style={styles.createButton}
         onPress={
-          selectedClients.length > 0 ? handleClearSelection : () => setModalVisible(true)
+      () => setModalVisible(true)
         }
       >
         <Text style={styles.createButtonText}>
-          {selectedClients.length > 0 ? 'Limpar clientes selecionados' : 'Criar cliente'}
+          Criar cliente
         </Text>
       </TouchableOpacity>
+
+      {selectedClients.length > 0 && (
+        <TouchableOpacity
+          style={styles.selectedButton}
+          onPress={handleNavigateToSelected}
+        >
+          <Text style={styles.selectedButtonText}>
+            Ver clientes selecionados
+          </Text>
+        </TouchableOpacity>
+      )}
 
       <Modal
         isVisible={modalVisible}
@@ -419,5 +438,21 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 16,
     color: '#666',
+  },
+  selectedButton: {
+    marginTop: 10,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    backgroundColor: '#EC6724',
+    borderRadius: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  selectedButtonText: {
+    fontFamily: 'Inter',
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#fff',
   },
 });

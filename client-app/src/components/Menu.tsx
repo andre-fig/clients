@@ -17,6 +17,7 @@ const { width } = Dimensions.get('window');
 type RootStackParamList = {
   Login: undefined;
   Clients: undefined;
+  SelectedClients: undefined;
   NotFound: undefined;
 };
 
