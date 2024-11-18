@@ -23,8 +23,8 @@ async function bootstrap() {
 
   // Swagger Configuration
   const config = new DocumentBuilder()
-    .setTitle('URL Shortener Service')
-    .setDescription('URL Shortening API')
+    .setTitle('Client Service')
+    .setDescription('Client API')
     .addServer('http://localhost:8000')
     .setVersion('1.0')
     .addBearerAuth()
